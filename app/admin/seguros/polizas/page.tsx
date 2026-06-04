@@ -20,13 +20,14 @@ import {
 } from "@/components/ui/select"
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field"
 import { MonthNavigator } from "@/components/ui/month-navigator"
-import { segurosAPI, Poliza } from "@/lib/api"
+import { segurosAPI, Poliza, suscripcionAPI, SuscripcionEstado } from "@/lib/api"
 import { buscarLocalidad, type LocalidadAR } from "@/lib/localidades-ar"
 import {
   Shield, Plus, Search, Filter, Edit2, Trash2, X, CheckCircle2,
   XCircle, Clock, Car, Bike, Home, User, Banknote, ChevronLeft, ChevronRight,
-  Loader2, UserCheck, MapPin,
+  Loader2, UserCheck, MapPin, Crown, Sparkles, Zap,
 } from "lucide-react"
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 
 const ASEGURADORAS = [
@@ -117,6 +118,10 @@ function PolizasPageInner() {
   const [estadoFilter, setEstadoFilter] = useState(() => searchParams.get("estado") || "all")
   const [aseguradoraFilter, setAseguradoraFilter] = useState(() => searchParams.get("aseguradora") || "all")
   const [ramoFilter, setRamoFilter] = useState(() => searchParams.get("ramo") || "all")
+
+  // Suscripcion (para popup FREE)
+  const [suscripcion, setSuscripcion] = useState<SuscripcionEstado | null>(null)
+  const [showFreeLimit, setShowFreeLimit] = useState(false)
 
   // Dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -224,12 +229,33 @@ function PolizasPageInner() {
 
   useEffect(() => { fetchPolizas() }, [page, estadoFilter, aseguradoraFilter, ramoFilter, filterYear, filterMonth])
 
+  // Cargar suscripción una sola vez
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    suscripcionAPI.estado(token).then(s => setSuscripcion(s)).catch(() => {})
+  }, [])
+
+  // Refrescar suscripción cuando se crea/elimina una póliza (para mantener uso al día)
+  const refrescarSuscripcion = async () => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    try { const s = await suscripcionAPI.estado(token); setSuscripcion(s) } catch {}
+  }
+
   const handleSearch = () => { setPage(1); fetchPolizas() }
 
   const hasFilters = estadoFilter !== "all" || aseguradoraFilter !== "all" || ramoFilter !== "all" || search.trim() !== ""
   const clearFilters = () => { setEstadoFilter("all"); setAseguradoraFilter("all"); setRamoFilter("all"); setSearch(""); setPage(1) }
 
-  const openCreate = () => { setSelectedPoliza(null); setFormData(EMPTY_FORM); setIsDialogOpen(true) }
+  const openCreate = () => {
+    // Bloqueo plan FREE: si ya tiene >=1 poliza, modal bloqueante
+    if (suscripcion && suscripcion.plan === "FREE" && (suscripcion.uso?.polizas ?? 0) >= 1) {
+      setShowFreeLimit(true)
+      return
+    }
+    setSelectedPoliza(null); setFormData(EMPTY_FORM); setIsDialogOpen(true)
+  }
   const openEdit = (p: Poliza) => { setSelectedPoliza(p); setFormData({ ...p }); setIsDialogOpen(true) }
 
   const handleSubmit = async () => {
@@ -255,8 +281,17 @@ function PolizasPageInner() {
       }
       setIsDialogOpen(false)
       fetchPolizas()
-    } catch {
-      toast({ title: "Error", description: "No se pudo guardar la póliza", variant: "destructive" })
+      refrescarSuscripcion()
+    } catch (e: any) {
+      // Backend devuelve 403 con "Límite del plan" si se intentó esquivar el front
+      const msg = (e?.message || "").toLowerCase()
+      if (msg.includes("límite") || msg.includes("limite") || msg.includes("free")) {
+        setIsDialogOpen(false)
+        setShowFreeLimit(true)
+        refrescarSuscripcion()
+      } else {
+        toast({ title: "Error", description: "No se pudo guardar la póliza", variant: "destructive" })
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -779,6 +814,58 @@ function PolizasPageInner() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal bloqueante de límite plan FREE */}
+      <Dialog open={showFreeLimit} onOpenChange={setShowFreeLimit}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0">
+          <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-6 text-white relative">
+            <button
+              onClick={() => setShowFreeLimit(false)}
+              className="absolute top-3 right-3 text-white/70 hover:text-white"
+              aria-label="Cerrar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <Crown className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-widest opacity-80">Plan gratuito</p>
+                <h2 className="text-xl font-bold leading-tight">Su versión gratuita finalizó</h2>
+              </div>
+            </div>
+            <p className="text-sm text-white/90 mt-3">
+              ¡Suscríbase ahora para seguir cargando pólizas, cobranzas y siniestros sin límites!
+            </p>
+          </div>
+          <div className="p-6 space-y-3 bg-white">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-lg border bg-amber-50 border-amber-200 p-3">
+                <p className="font-semibold text-amber-900 flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> Plan FREE</p>
+                <p className="text-amber-700 mt-1">1 póliza · 1 cobranza · 1 siniestro · 1 usuario</p>
+              </div>
+              <div className="rounded-lg border bg-emerald-50 border-emerald-200 p-3">
+                <p className="font-semibold text-emerald-900 flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" /> Plan PRO</p>
+                <p className="text-emerald-700 mt-1">Todo ilimitado · soporte · logo en emails</p>
+              </div>
+            </div>
+            <Link
+              href="/admin/suscripcion"
+              className="block w-full text-center py-3 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/30 transition-all"
+            >
+              Suscribirme ahora →
+            </Link>
+            <button
+              onClick={() => setShowFreeLimit(false)}
+              className="block w-full text-center py-2 text-xs text-slate-500 hover:text-slate-800"
+            >
+              Ahora no
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       </div>
     </DashboardLayout>
   )

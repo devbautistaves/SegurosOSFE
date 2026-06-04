@@ -18,6 +18,7 @@ import {
   Shield,
   Megaphone,
   Crown,
+  Palette,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -58,6 +59,7 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
     { href: "/admin/seguros/siniestros",  label: "Siniestros",     icon: AlertTriangle,   tour: "nav-siniestros" },
     { href: "/admin/seguros/seguimiento", label: "Seguimiento",    icon: Activity,        tour: "nav-seguimiento" },
     ...(role === "admin" || role === "admin_seguros" ? [{ href: "/admin/users", label: "Usuarios", icon: Users, tour: "nav-users" }] : []),
+    ...(role === "admin" || role === "admin_seguros" ? [{ href: "/admin/settings/catalogos", label: "Personalizar", icon: Palette, tour: "nav-personalizar" }] : []),
     { href: "/admin/announcements",       label: "Anuncios",       icon: Megaphone,       tour: "nav-anuncios" },
     { href: "/admin/notifications",       label: "Notificaciones", icon: Bell,            tour: "nav-notif" },
     { href: "/admin/suscripcion",         label: "Suscripción",    icon: Crown,           tour: "nav-suscripcion" },
