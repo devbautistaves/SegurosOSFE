@@ -29,13 +29,14 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { useCatalogos } from "@/hooks/use-catalogos"
 
-const ASEGURADORAS = [
+const ASEGURADORAS_DEFAULT = [
   "LA_CAJA", "MERCANTIL_ANDINA", "SAN_CRISTOBAL", "SANCOR", "ALLIANZ",
   "ZURICH", "GALICIA", "LA_PERSEVERANCIA", "ATM", "BERKLEY",
   "RIVADAVIA", "MAPFRE", "NACION", "INTEGRITY", "PROVIDENCIA", "PROF", "OTRA",
 ]
-const RAMOS = [
+const RAMOS_DEFAULT = [
   "AUTOS", "MOTOS", "HOGAR", "INCENDIO", "INT_COMERCIO",
   "ART", "ACC_PERSONALES", "VIDA", "RESP_CIVIL", "OBJ_ESPECIFICOS",
   "FLOTA_AUTOMOTOR", "OTRO",
@@ -98,6 +99,7 @@ const PAGE_SIZE = 50
 
 function PolizasPageInner() {
   const searchParams = useSearchParams()
+  const { aseguradoras: ASEGURADORAS, ramos: RAMOS } = useCatalogos(ASEGURADORAS_DEFAULT, RAMOS_DEFAULT)
 
   const [polizas, setPolizas] = useState<Poliza[]>([])
   const [total, setTotal] = useState(0)

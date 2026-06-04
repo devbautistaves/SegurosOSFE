@@ -6,7 +6,7 @@ import { Sidebar } from "./sidebar"
 import { Header } from "./header"
 import { Spinner } from "@/components/ui/spinner"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
-import { User, usersAPI } from "@/lib/api"
+import { User, usersAPI, aseguradoraAPI } from "@/lib/api"
 import { getMaintenanceStatus } from "@/hooks/use-maintenance"
 
 interface DashboardLayoutProps {
@@ -94,7 +94,26 @@ export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps
       }
     }
 
+    // Hidratar catálogos de la aseguradora en localStorage para que los selects
+    // de polizas/cobranzas/siniestros (que usan useCatalogos) reflejen lo
+    // configurado en /admin/settings/catalogos sin necesidad de recargar.
+    const hydrateCatalogos = async () => {
+      try {
+        const r = await aseguradoraAPI.getCatalogos(token)
+        const stored = localStorage.getItem("aseguradora")
+        const base = stored ? JSON.parse(stored) : {}
+        localStorage.setItem("aseguradora", JSON.stringify({
+          ...base,
+          aseguradorasCatalogo: Array.isArray(r.aseguradorasCatalogo) ? r.aseguradorasCatalogo : [],
+          ramosCatalogo: Array.isArray(r.ramosCatalogo) ? r.ramosCatalogo : [],
+          medioDePagoCatalogo: Array.isArray(r.medioDePagoCatalogo) ? r.medioDePagoCatalogo : [],
+        }))
+        window.dispatchEvent(new Event("branding-updated"))
+      } catch {}
+    }
+
     validateSession()
+    hydrateCatalogos()
 
     // Listener for logout in other tabs and maintenance mode changes
     const handleStorageChange = (e: StorageEvent) => {

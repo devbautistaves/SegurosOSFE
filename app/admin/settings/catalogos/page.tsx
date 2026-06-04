@@ -102,11 +102,18 @@ export default function ConfigPROPage() {
         aseguradoraAPI.updateMe(token, { nombre, whatsapp, email, telefono, cuit, direccion, colorPrimario }),
         aseguradoraAPI.updateCatalogos(token, { aseguradorasCatalogo: aseguradoras, ramosCatalogo: ramos, medioDePagoCatalogo: medios }),
       ])
-      // Sync localStorage para que el sidebar muestre el nombre actualizado
+      // Sync localStorage: nombre/branding + TODOS los catálogos para que
+      // useCatalogos los lea inmediatamente y el sidebar se redibuje.
       const stored = localStorage.getItem("aseguradora")
       if (stored) {
         try {
-          localStorage.setItem("aseguradora", JSON.stringify({ ...JSON.parse(stored), nombre, colorPrimario, whatsapp, logo }))
+          localStorage.setItem("aseguradora", JSON.stringify({
+            ...JSON.parse(stored),
+            nombre, colorPrimario, whatsapp, logo,
+            aseguradorasCatalogo: aseguradoras,
+            ramosCatalogo: ramos,
+            medioDePagoCatalogo: medios,
+          }))
           window.dispatchEvent(new Event("branding-updated"))
         } catch {}
       }
