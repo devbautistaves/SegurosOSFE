@@ -26,9 +26,10 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const response = await authAPI.login(email, password)
+      const response = await authAPI.loginMT(email, password)
       localStorage.setItem("token", response.token)
       localStorage.setItem("user", JSON.stringify(response.user))
+      if (response.aseguradora) localStorage.setItem("aseguradora", JSON.stringify(response.aseguradora))
       localStorage.setItem("selectedCompanyId", "seguros")
 
       toast({ title: "Bienvenido", description: `Hola ${response.user.name}!` })

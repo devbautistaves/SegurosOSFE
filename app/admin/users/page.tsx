@@ -212,11 +212,18 @@ export default function AdminUsersPage() {
       setIsDialogOpen(false)
       fetchUsers()
     } catch (error) {
+      const msg = error instanceof Error ? error.message : "Error al guardar el usuario"
+      const esLimite = msg.toLowerCase().includes("límite") || msg.toLowerCase().includes("limite")
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al guardar el usuario",
+        title: esLimite ? "Alcanzaste el límite del plan FREE" : "Error",
+        description: esLimite
+          ? "El plan FREE permite 1 usuario. Pasate a PRO para invitar a tu equipo."
+          : msg,
         variant: "destructive",
       })
+      if (esLimite && typeof window !== "undefined") {
+        setTimeout(() => { window.location.href = "/admin/suscripcion" }, 1500)
+      }
     } finally {
       setIsSubmitting(false)
     }

@@ -35,6 +35,15 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
+  // Nombre del broker (tenant) leído del localStorage que setea login/registro
+  let brokerNombre = ""
+  if (typeof window !== "undefined") {
+    try {
+      const a = localStorage.getItem("aseguradora")
+      if (a) brokerNombre = JSON.parse(a)?.nombre || ""
+    } catch {}
+  }
+
   const handleLogout = () => {
     localStorage.removeItem("token")
     localStorage.removeItem("user")
@@ -81,7 +90,9 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
             <Shield className="h-7 w-7 text-white" />
             <div>
               <p className="text-sm font-bold text-white leading-none tracking-wide">SegurOS</p>
-              <p className="text-[9px] text-blue-300 leading-none tracking-widest uppercase mt-0.5">CRM SaaS</p>
+              <p className="text-[10px] text-blue-300 leading-tight mt-0.5 truncate max-w-[140px]">
+                {brokerNombre || "CRM SaaS"}
+              </p>
             </div>
           </div>
           <Button
