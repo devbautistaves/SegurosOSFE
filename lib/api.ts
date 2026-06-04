@@ -805,12 +805,14 @@ export interface Aseguradora {
   slug: string
   email?: string
   telefono?: string
+  whatsapp?: string
   cuit?: string
   direccion?: string
   logo?: string
   colorPrimario?: string
   aseguradorasCatalogo: string[]
   ramosCatalogo: string[]
+  medioDePagoCatalogo: string[]
   plan: "FREE" | "PRO"
   planStatus: "ACTIVO" | "VENCIDO" | "CANCELADO"
   planVencimiento?: string | null
@@ -849,11 +851,11 @@ export const aseguradoraAPI = {
       method: "PUT", body: JSON.stringify(data), token,
     }),
   getCatalogos: (token: string) =>
-    fetchAPI<{ success: boolean; aseguradorasCatalogo: string[]; ramosCatalogo: string[] }>(
+    fetchAPI<{ success: boolean; aseguradorasCatalogo: string[]; ramosCatalogo: string[]; medioDePagoCatalogo: string[] }>(
       "/api/aseguradora/catalogos", { token }
     ),
-  updateCatalogos: (token: string, data: { aseguradorasCatalogo?: string[]; ramosCatalogo?: string[] }) =>
-    fetchAPI<{ success: boolean; aseguradorasCatalogo: string[]; ramosCatalogo: string[] }>(
+  updateCatalogos: (token: string, data: { aseguradorasCatalogo?: string[]; ramosCatalogo?: string[]; medioDePagoCatalogo?: string[] }) =>
+    fetchAPI<{ success: boolean; aseguradorasCatalogo: string[]; ramosCatalogo: string[]; medioDePagoCatalogo: string[] }>(
       "/api/aseguradora/catalogos",
       { method: "PUT", body: JSON.stringify(data), token }
     ),
