@@ -50,7 +50,7 @@ export default function SuscripcionPage() {
 
   if (loading || !estado) {
     return (
-      <DashboardLayout requiredRole="admin">
+      <DashboardLayout requiredRole={["admin", "admin_seguros"]}>
         <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       </DashboardLayout>
     )
@@ -65,7 +65,7 @@ export default function SuscripcionPage() {
   ]
 
   return (
-    <DashboardLayout requiredRole="admin">
+    <DashboardLayout requiredRole={["admin", "admin_seguros"]}>
     <div className="space-y-6 max-w-5xl mx-auto p-4 md:p-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
