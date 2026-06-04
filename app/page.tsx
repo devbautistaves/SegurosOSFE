@@ -16,7 +16,7 @@ const features = [
 ]
 
 const faqs = [
-  { q: "¿Es gratis?",                    a: "El plan FREE te deja cargar 1 póliza, 1 cobranza, 1 siniestro y 1 usuario para evaluar el sistema. Para uso real necesitás el plan PRO." },
+  { q: "¿Tiene período de prueba?",      a: "Sí. Incluye una prueba gratuita con 1 póliza, 1 cobranza, 1 siniestro y 1 usuario para evaluar el sistema sin tarjeta. Para uso real necesitás el plan PRO." },
   { q: "¿Mis datos quedan aislados?",    a: "Sí. Cada cuenta es 100% multi-tenant: ningún otro broker puede ver tus clientes, pólizas o cobranzas." },
   { q: "¿Puedo cancelar cuando quiera?", a: "Sí. La suscripción se cancela desde el panel y mantenés acceso PRO hasta el vencimiento." },
   { q: "¿Cómo pago el plan PRO?",        a: "Con MercadoPago, tarjeta o transferencia. Procesamiento seguro, sin guardar datos de tarjeta en nuestro sistema." },
@@ -68,7 +68,7 @@ export default function LandingPage() {
               Ver cómo funciona
             </Link>
           </div>
-          <p className="mt-4 text-xs text-slate-500">Sin tarjeta. Plan FREE para siempre. Tardás 1 minuto.</p>
+          <p className="mt-4 text-xs text-slate-500">Sin tarjeta. Prueba gratuita incluida. Tardás 1 minuto.</p>
         </div>
       </section>
 
@@ -103,9 +103,9 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-5">
             {/* FREE */}
             <div className="rounded-2xl border-2 border-slate-200 bg-white p-6">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">FREE</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">PRUEBA GRATUITA</p>
               <p className="text-4xl font-bold mt-2">$0</p>
-              <p className="text-sm text-slate-500">para siempre</p>
+              <p className="text-sm text-slate-500">prueba gratuita</p>
               <ul className="mt-5 space-y-2 text-sm">
                 <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> 1 póliza de prueba</li>
                 <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> 1 cobranza, 1 siniestro</li>

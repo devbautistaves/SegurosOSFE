@@ -91,7 +91,7 @@ export default function RegistroPage() {
           </div>
 
           <h2 className="text-2xl font-bold tracking-tight">Creá tu cuenta gratis</h2>
-          <p className="text-sm text-muted-foreground mb-6">Tardás menos de 1 minuto. Plan FREE para siempre.</p>
+          <p className="text-sm text-muted-foreground mb-6">Tardás menos de 1 minuto. Incluye prueba gratuita.</p>
 
           <form onSubmit={submit} className="space-y-3.5">
             <div>
