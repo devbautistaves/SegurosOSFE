@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Sidebar } from "./sidebar"
 import { Header } from "./header"
 import { Spinner } from "@/components/ui/spinner"
+import { ImpersonationBanner } from "@/components/impersonation-banner"
 import { User, usersAPI } from "@/lib/api"
 import { getMaintenanceStatus } from "@/hooks/use-maintenance"
 
@@ -125,7 +126,9 @@ export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex overflow-hidden">
+    <div className="min-h-screen bg-slate-100 flex flex-col overflow-hidden">
+      <ImpersonationBanner />
+      <div className="flex flex-1 overflow-hidden">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -151,6 +154,7 @@ export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps
           onMenuClick={() => setSidebarOpen(true)}
         />
         <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-x-auto overflow-y-auto">{children}</main>
+      </div>
       </div>
     </div>
   )
