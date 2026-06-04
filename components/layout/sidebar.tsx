@@ -17,12 +17,13 @@ import {
   AlertTriangle,
   Shield,
   Megaphone,
+  Crown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-// SegurOS colors
-const WAC_PRIMARY = "#0f2149"
-const WAC_ACCENT  = "#1d4ed8"
+// SegurOS brand
+const BRAND_PRIMARY = "#0f172a"
+const BRAND_ACCENT  = "#2563eb"
 
 interface SidebarProps {
   role: "admin" | "admin_seguros" | "seller" | "supervisor" | "support"
@@ -42,15 +43,15 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
   }
 
   const adminLinks = [
-    { href: "/admin",                     label: "Dashboard",      icon: LayoutDashboard },
-    { href: "/admin/seguros/polizas",     label: "Pólizas",        icon: FileText },
-    { href: "/admin/seguros/cobranzas",   label: "Cobranzas",      icon: CreditCard },
-    { href: "/admin/seguros/siniestros",  label: "Siniestros",     icon: AlertTriangle },
-    { href: "/admin/seguros/seguimiento", label: "Seguimiento",    icon: Activity },
-    ...(role === "admin" ? [{ href: "/admin/users", label: "Usuarios", icon: Users }] : []),
-    { href: "/admin/announcements",       label: "Anuncios",       icon: Megaphone },
-    { href: "/admin/notifications",       label: "Notificaciones", icon: Bell },
-    ...(role === "admin" ? [{ href: "/admin/chat", label: "Chat", icon: MessageSquare }] : []),
+    { href: "/admin",                     label: "Dashboard",      icon: LayoutDashboard, tour: "nav-dashboard" },
+    { href: "/admin/seguros/polizas",     label: "Pólizas",        icon: FileText,        tour: "nav-polizas" },
+    { href: "/admin/seguros/cobranzas",   label: "Cobranzas",      icon: CreditCard,      tour: "nav-cobranzas" },
+    { href: "/admin/seguros/siniestros",  label: "Siniestros",     icon: AlertTriangle,   tour: "nav-siniestros" },
+    { href: "/admin/seguros/seguimiento", label: "Seguimiento",    icon: Activity,        tour: "nav-seguimiento" },
+    ...(role === "admin" || role === "admin_seguros" ? [{ href: "/admin/users", label: "Usuarios", icon: Users, tour: "nav-users" }] : []),
+    { href: "/admin/announcements",       label: "Anuncios",       icon: Megaphone,       tour: "nav-anuncios" },
+    { href: "/admin/notifications",       label: "Notificaciones", icon: Bell,            tour: "nav-notif" },
+    { href: "/admin/suscripcion",         label: "Suscripción",    icon: Crown,           tour: "nav-suscripcion" },
   ]
 
   const sellerLinks = [
@@ -70,7 +71,7 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
   return (
     <aside
       className="h-screen w-64 min-w-[16rem] max-w-[16rem] flex-shrink-0 overflow-hidden shadow-lg"
-      style={{ background: WAC_PRIMARY }}
+      style={{ background: BRAND_PRIMARY }}
     >
       <div className="flex h-full flex-col">
 
@@ -79,8 +80,8 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
           <div className="flex items-center gap-2">
             <Shield className="h-7 w-7 text-white" />
             <div>
-              <p className="text-sm font-bold text-white leading-none tracking-wide">WAC SEGUROS</p>
-              <p className="text-[9px] text-blue-300 leading-none tracking-widest uppercase mt-0.5">CRM</p>
+              <p className="text-sm font-bold text-white leading-none tracking-wide">SegurOS</p>
+              <p className="text-[9px] text-blue-300 leading-none tracking-widest uppercase mt-0.5">CRM SaaS</p>
             </div>
           </div>
           <Button
@@ -98,7 +99,7 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
           <div className="flex items-center gap-3">
             <div
               className="h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-              style={{ background: WAC_ACCENT }}
+              style={{ background: BRAND_ACCENT }}
             >
               {userName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
             </div>
@@ -122,6 +123,7 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
                   key={link.href}
                   href={link.href}
                   onClick={onLinkClick}
+                  data-tour={(link as any).tour}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                     isActive
@@ -142,6 +144,7 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
           <Link
             href={settingsHref}
             onClick={onLinkClick}
+            data-tour="nav-settings"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
           >
             <Settings className="h-4 w-4 text-white/50" />

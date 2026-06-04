@@ -78,6 +78,34 @@ export const authAPI = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  // SegurOS SaaS — autoregistro público que crea Aseguradora + admin
+  registerAseguradora: (data: RegisterAseguradoraData) =>
+    fetchAPI<{ success: boolean; token: string; user: User; aseguradora: Aseguradora }>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // Multi-tenant login: si hay múltiples cuentas con el mismo email se manda aseguradoraSlug
+  loginMT: (email: string, password: string, aseguradoraSlug?: string) =>
+    fetchAPI<{ success: boolean; token: string; user: User; aseguradora: Aseguradora }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password, aseguradoraSlug }),
+    }),
+
+  aseguradorasByEmail: (email: string) =>
+    fetchAPI<{ success: boolean; aseguradoras: { nombre: string; slug: string; rol: string }[]; multiple: boolean }>(
+      "/api/auth/aseguradoras-by-email",
+      { method: "POST", body: JSON.stringify({ email }) }
+    ),
+
+  me: (token: string) =>
+    fetchAPI<{ success: boolean; user: User; aseguradora: Aseguradora }>("/api/auth/me", { token }),
+
+  setOnboarding: (token: string, pendiente: boolean) =>
+    fetchAPI<{ success: boolean; onboardingPendiente: boolean }>("/api/auth/onboarding", {
+      method: "PUT", body: JSON.stringify({ pendiente }), token,
+    }),
 }
 
 // Users
@@ -757,6 +785,78 @@ export interface RegisterData {
   password: string
   phone: string
   location: string
+}
+
+// SegurOS SaaS — autoregistro multi-tenant
+export interface RegisterAseguradoraData {
+  aseguradoraNombre: string
+  aseguradoraTelefono: string
+  aseguradoraEmail?: string
+  name: string
+  email: string
+  password: string
+  phone?: string
+  location?: string
+}
+
+export interface Aseguradora {
+  _id: string
+  nombre: string
+  slug: string
+  email?: string
+  telefono?: string
+  cuit?: string
+  direccion?: string
+  logo?: string
+  colorPrimario?: string
+  aseguradorasCatalogo: string[]
+  ramosCatalogo: string[]
+  plan: "FREE" | "PRO"
+  planStatus: "ACTIVO" | "VENCIDO" | "CANCELADO"
+  planVencimiento?: string | null
+}
+
+export interface SuscripcionEstado {
+  plan: "FREE" | "PRO"
+  planStatus: "ACTIVO" | "VENCIDO" | "CANCELADO"
+  planTipo: "mensual" | "anual" | null
+  planVencimiento?: string | null
+  precios: {
+    PRO_MENSUAL: { id: string; monto: number; descripcion: string }
+    PRO_ANUAL:   { id: string; monto: number; descripcion: string }
+  }
+  uso:     { polizas: number; cobranzas: number; siniestros: number; usuarios: number }
+  limites: { polizas: number | null; cobranzas: number | null; siniestros: number | null; usuarios: number | null }
+}
+
+export const suscripcionAPI = {
+  estado: (token: string) =>
+    fetchAPI<{ success: boolean } & SuscripcionEstado>("/api/suscripcion/estado", { token }),
+  checkout: (token: string, plan: "PRO_MENSUAL" | "PRO_ANUAL") =>
+    fetchAPI<{ success: boolean; init_point: string; preapprovalId?: string; preferenceId?: string; tipo: string }>(
+      "/api/suscripcion/checkout",
+      { method: "POST", body: JSON.stringify({ plan }), token }
+    ),
+  cancelar: (token: string) =>
+    fetchAPI<{ success: boolean }>("/api/suscripcion/cancelar", { method: "POST", token }),
+}
+
+export const aseguradoraAPI = {
+  getMe: (token: string) =>
+    fetchAPI<{ success: boolean; aseguradora: Aseguradora }>("/api/aseguradora/me", { token }),
+  updateMe: (token: string, data: Partial<Aseguradora>) =>
+    fetchAPI<{ success: boolean; aseguradora: Aseguradora }>("/api/aseguradora/me", {
+      method: "PUT", body: JSON.stringify(data), token,
+    }),
+  getCatalogos: (token: string) =>
+    fetchAPI<{ success: boolean; aseguradorasCatalogo: string[]; ramosCatalogo: string[] }>(
+      "/api/aseguradora/catalogos", { token }
+    ),
+  updateCatalogos: (token: string, data: { aseguradorasCatalogo?: string[]; ramosCatalogo?: string[] }) =>
+    fetchAPI<{ success: boolean; aseguradorasCatalogo: string[]; ramosCatalogo: string[] }>(
+      "/api/aseguradora/catalogos",
+      { method: "PUT", body: JSON.stringify(data), token }
+    ),
 }
 
 export interface CreateUserData {
