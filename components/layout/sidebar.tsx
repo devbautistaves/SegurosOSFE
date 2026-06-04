@@ -36,12 +36,17 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
-  // Nombre del broker (tenant) leído del localStorage que setea login/registro
+  // Nombre + logo del broker (tenant) leído del localStorage que setea login/registro/personalizar
   let brokerNombre = ""
+  let brokerLogo = ""
   if (typeof window !== "undefined") {
     try {
       const a = localStorage.getItem("aseguradora")
-      if (a) brokerNombre = JSON.parse(a)?.nombre || ""
+      if (a) {
+        const parsed = JSON.parse(a)
+        brokerNombre = parsed?.nombre || ""
+        brokerLogo = parsed?.logo || ""
+      }
     } catch {}
   }
 
@@ -88,12 +93,20 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
 
         {/* Brand */}
         <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
-          <div className="flex items-center gap-2">
-            <Shield className="h-7 w-7 text-white" />
-            <div>
-              <p className="text-sm font-bold text-white leading-none tracking-wide">SegurOS</p>
+          <div className="flex items-center gap-2 min-w-0">
+            {brokerLogo ? (
+              <div className="h-10 w-10 rounded-md bg-white p-1 flex items-center justify-center flex-shrink-0">
+                <img src={brokerLogo} alt={brokerNombre || "Broker"} className="max-h-full max-w-full object-contain" />
+              </div>
+            ) : (
+              <Shield className="h-7 w-7 text-white flex-shrink-0" />
+            )}
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-white leading-none tracking-wide truncate">
+                {brokerLogo ? (brokerNombre || "SegurOS") : "SegurOS"}
+              </p>
               <p className="text-[10px] text-blue-300 leading-tight mt-0.5 truncate max-w-[140px]">
-                {brokerNombre || "CRM SaaS"}
+                {brokerLogo ? "Powered by SegurOS" : (brokerNombre || "CRM SaaS")}
               </p>
             </div>
           </div>

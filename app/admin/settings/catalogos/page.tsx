@@ -132,7 +132,12 @@ export default function ConfigPROPage() {
       const d = await r.json()
       if (!d.success) throw new Error(d.error)
       setLogo(d.logo)
-      setOk("Logo subido correctamente")
+      // Sync localStorage para que sidebar muestre logo nuevo al toque
+      try {
+        const stored = localStorage.getItem("aseguradora")
+        if (stored) localStorage.setItem("aseguradora", JSON.stringify({ ...JSON.parse(stored), logo: d.logo }))
+      } catch {}
+      setOk("Logo subido correctamente — recargá si no lo ves en el sidebar")
     } catch (e: any) { setErr(e.message) } finally { setUploadingLogo(false) }
   }
 
