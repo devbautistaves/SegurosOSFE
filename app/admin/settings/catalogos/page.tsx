@@ -105,7 +105,10 @@ export default function ConfigPROPage() {
       // Sync localStorage para que el sidebar muestre el nombre actualizado
       const stored = localStorage.getItem("aseguradora")
       if (stored) {
-        try { localStorage.setItem("aseguradora", JSON.stringify({ ...JSON.parse(stored), nombre, colorPrimario, whatsapp, logo })) } catch {}
+        try {
+          localStorage.setItem("aseguradora", JSON.stringify({ ...JSON.parse(stored), nombre, colorPrimario, whatsapp, logo }))
+          window.dispatchEvent(new Event("branding-updated"))
+        } catch {}
       }
       setOk("Cambios guardados correctamente")
     } catch (e: any) { setErr(e.message) }
@@ -136,8 +139,9 @@ export default function ConfigPROPage() {
       try {
         const stored = localStorage.getItem("aseguradora")
         if (stored) localStorage.setItem("aseguradora", JSON.stringify({ ...JSON.parse(stored), logo: d.logo }))
+        window.dispatchEvent(new Event("branding-updated"))
       } catch {}
-      setOk("Logo subido correctamente — recargá si no lo ves en el sidebar")
+      setOk("Logo subido correctamente")
     } catch (e: any) { setErr(e.message) } finally { setUploadingLogo(false) }
   }
 

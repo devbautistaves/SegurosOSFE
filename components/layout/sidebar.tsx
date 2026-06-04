@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -36,7 +37,13 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
-  // Nombre + logo del broker (tenant) leído del localStorage que setea login/registro/personalizar
+  // Nombre + logo del broker, reactivo a "branding-updated"
+  const [brandingTick, setBrandingTick] = useState(0)
+  useEffect(() => {
+    const h = () => setBrandingTick(t => t + 1)
+    window.addEventListener("branding-updated", h)
+    return () => window.removeEventListener("branding-updated", h)
+  }, [])
   let brokerNombre = ""
   let brokerLogo = ""
   if (typeof window !== "undefined") {
@@ -49,6 +56,8 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
       }
     } catch {}
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _bt = brandingTick
 
   const handleLogout = () => {
     localStorage.removeItem("token")
