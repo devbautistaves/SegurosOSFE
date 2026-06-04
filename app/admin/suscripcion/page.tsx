@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { suscripcionAPI, SuscripcionEstado } from "@/lib/api"
+import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Crown, Check, Loader2, AlertCircle, ExternalLink } from "lucide-react"
 
 function fmtMoney(n: number) {
@@ -48,7 +49,11 @@ export default function SuscripcionPage() {
   }
 
   if (loading || !estado) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+    return (
+      <DashboardLayout requiredRole="admin">
+        <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      </DashboardLayout>
+    )
   }
 
   const esPRO = estado.plan === "PRO" && estado.planStatus === "ACTIVO"
@@ -60,6 +65,7 @@ export default function SuscripcionPage() {
   ]
 
   return (
+    <DashboardLayout requiredRole="admin">
     <div className="space-y-6 max-w-5xl mx-auto p-4 md:p-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -154,5 +160,6 @@ export default function SuscripcionPage() {
         Pagos procesados por MercadoPago. Podés cancelar cuando quieras desde esta misma pantalla.
       </p>
     </div>
+    </DashboardLayout>
   )
 }

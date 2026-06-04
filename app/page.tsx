@@ -16,7 +16,7 @@ const features = [
 ]
 
 const faqs = [
-  { q: "¿Es gratis?",                    a: "El plan FREE es gratis para siempre, con un límite de 50 pólizas, 100 cobranzas, 30 siniestros y 3 usuarios. Suficiente para arrancar." },
+  { q: "¿Es gratis?",                    a: "El plan FREE te deja cargar 1 póliza, 1 cobranza, 1 siniestro y 1 usuario para evaluar el sistema. Para uso real necesitás el plan PRO." },
   { q: "¿Mis datos quedan aislados?",    a: "Sí. Cada cuenta es 100% multi-tenant: ningún otro broker puede ver tus clientes, pólizas o cobranzas." },
   { q: "¿Puedo cancelar cuando quiera?", a: "Sí. La suscripción se cancela desde el panel y mantenés acceso PRO hasta el vencimiento." },
   { q: "¿Cómo pago el plan PRO?",        a: "Con MercadoPago, tarjeta o transferencia. Procesamiento seguro, sin guardar datos de tarjeta en nuestro sistema." },
@@ -107,11 +107,11 @@ export default function LandingPage() {
               <p className="text-4xl font-bold mt-2">$0</p>
               <p className="text-sm text-slate-500">para siempre</p>
               <ul className="mt-5 space-y-2 text-sm">
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Hasta 50 pólizas</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Hasta 100 cobranzas</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Hasta 30 siniestros</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Hasta 3 usuarios</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Recordatorios automáticos</li>
+                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> 1 póliza de prueba</li>
+                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> 1 cobranza, 1 siniestro</li>
+                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> 1 usuario admin</li>
+                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Acceso a todas las funciones</li>
+                <li className="flex gap-2 text-slate-500"><Check className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" /> Ideal para evaluar el sistema</li>
               </ul>
               <Link href="/registro" className="w-full mt-6 block text-center rounded-md border border-slate-300 hover:border-slate-400 px-4 py-2.5 font-semibold transition-colors">
                 Empezar gratis
