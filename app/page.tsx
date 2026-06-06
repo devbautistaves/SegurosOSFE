@@ -1,6 +1,6 @@
 import Link from "next/link"
 import {
-  Shield, ArrowRight, Check, Zap, Users, Bell,
+  Shield, ArrowRight, Check, Zap, Users, Bell, Sparkles,
   FileText, CreditCard, AlertTriangle, BarChart3, Smartphone, Crown,
 } from "lucide-react"
 
@@ -16,11 +16,13 @@ const features = [
 ]
 
 const faqs = [
-  { q: "¿Tiene período de prueba?",      a: "Sí. Incluye una prueba gratuita con 1 póliza, 1 cobranza, 1 siniestro y 1 usuario para evaluar el sistema sin tarjeta. Para uso real necesitás el plan PRO." },
-  { q: "¿Mis datos quedan aislados?",    a: "Sí. Cada cuenta es 100% multi-tenant: ningún otro broker puede ver tus clientes, pólizas o cobranzas." },
-  { q: "¿Puedo cancelar cuando quiera?", a: "Sí. La suscripción se cancela desde el panel y mantenés acceso PRO hasta el vencimiento." },
-  { q: "¿Cómo pago el plan PRO?",        a: "Con MercadoPago, tarjeta o transferencia. Procesamiento seguro, sin guardar datos de tarjeta en nuestro sistema." },
-  { q: "¿Quién soporta SegurOS?",        a: "TusVentas, una empresa argentina con experiencia en CRMs para brokers de seguros." },
+  { q: "¿Cómo funcionan los 7 días gratis?",      a: "Al registrarte arrancás con acceso PRO completo durante 7 días, sin tarjeta. Cargás pólizas, cobranzas y siniestros sin límites. Si al día 8 no elegiste un plan, tus datos quedan guardados pero no podés crear cosas nuevas hasta suscribirte." },
+  { q: "¿Qué pasa con la PROMO de lanzamiento?", a: "Pagás $25.000/mes durante los primeros 3 meses con acceso PRO completo. Al mes 4 se renueva automáticamente como PRO Mensual ($45.000). Podés cancelar cuando quieras desde el panel." },
+  { q: "¿Mis datos quedan aislados?",             a: "Sí. Cada cuenta es 100% multi-tenant: ningún otro broker puede ver tus clientes, pólizas o cobranzas." },
+  { q: "¿Puedo cancelar cuando quiera?",          a: "Sí. La suscripción se cancela desde el panel y mantenés acceso PRO hasta el final del ciclo pagado. No reembolsamos el período en curso." },
+  { q: "¿Cómo pago?",                             a: "Con MercadoPago — los planes mensuales (PROMO y PRO Mensual) son suscripción recurrente, el PRO Anual se paga una vez. Procesamiento seguro, sin guardar datos de tarjeta en nuestro sistema." },
+  { q: "¿Cuántos usuarios puedo tener?",          a: "Sin límite en cualquier plan PRO. Invitá a todo tu equipo con roles diferenciados (admin, vendedor, soporte)." },
+  { q: "¿Quién soporta SegurOS?",                 a: "TusVentas, una empresa argentina con experiencia en CRMs para brokers de seguros." },
 ]
 
 export default function LandingPage() {
@@ -41,7 +43,7 @@ export default function LandingPage() {
             <a href="#faq"      className="hidden sm:inline text-slate-600 hover:text-slate-900">Preguntas</a>
             <Link href="/login" className="text-slate-700 hover:text-slate-900 font-medium">Entrar</Link>
             <Link href="/registro" className="rounded-md bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 font-semibold transition-colors">
-              Probar gratis
+              7 días gratis
             </Link>
           </nav>
         </div>
@@ -51,8 +53,8 @@ export default function LandingPage() {
       <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white">
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 30% 20%, #3b82f6 0%, transparent 50%)" }} />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-28 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 mb-6 uppercase tracking-wider">
-            <Zap className="h-3 w-3" /> CRM SaaS para brokers de seguros
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1 mb-6 uppercase tracking-wider">
+            <Sparkles className="h-3 w-3" /> 7 días gratis · sin tarjeta
           </div>
           <h1 className="text-4xl sm:text-6xl font-bold leading-tight tracking-tight max-w-3xl mx-auto">
             Tu cartera de seguros, <span className="text-blue-600">ordenada de verdad</span>.
@@ -62,13 +64,13 @@ export default function LandingPage() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/registro" className="rounded-md bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 font-semibold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-colors">
-              Empezá gratis <ArrowRight className="h-4 w-4" />
+              Empezar 7 días gratis <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="#features" className="rounded-md border border-slate-300 hover:border-slate-400 text-slate-700 px-6 py-3 font-semibold transition-colors">
               Ver cómo funciona
             </Link>
           </div>
-          <p className="mt-4 text-xs text-slate-500">Sin tarjeta. Prueba gratuita incluida. Tardás 1 minuto.</p>
+          <p className="mt-4 text-xs text-slate-500">Acceso PRO completo durante el trial. Tardás 1 minuto.</p>
         </div>
       </section>
 
@@ -96,64 +98,82 @@ export default function LandingPage() {
       {/* PRICING */}
       <section id="pricing" className="py-20 bg-slate-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-14">
+          <div className="text-center max-w-2xl mx-auto mb-10">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Precios simples</h2>
-            <p className="mt-3 text-slate-600">Arrancá gratis y subí a PRO cuando lo necesites.</p>
+            <p className="mt-3 text-slate-600">7 días gratis sin tarjeta. Después elegís el plan que mejor te quede.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-5">
-            {/* FREE */}
-            <div className="rounded-2xl border-2 border-slate-200 bg-white p-6">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">PRUEBA GRATUITA</p>
-              <p className="text-4xl font-bold mt-2">$0</p>
-              <p className="text-sm text-slate-500">prueba gratuita</p>
-              <ul className="mt-5 space-y-2 text-sm">
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> 1 póliza de prueba</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> 1 cobranza, 1 siniestro</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> 1 usuario admin</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Acceso a todas las funciones</li>
-                <li className="flex gap-2 text-slate-500"><Check className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" /> Ideal para evaluar el sistema</li>
-              </ul>
-              <Link href="/registro" className="w-full mt-6 block text-center rounded-md border border-slate-300 hover:border-slate-400 px-4 py-2.5 font-semibold transition-colors">
-                Empezar gratis
+
+          {/* PROMO LANZAMIENTO destacada */}
+          <div className="rounded-2xl overflow-hidden shadow-2xl mb-8 relative" style={{ background: "linear-gradient(135deg, #064e3b 0%, #0f172a 100%)" }}>
+            <div className="absolute top-0 right-0 w-1/3 h-full opacity-15" style={{ background: "radial-gradient(circle, #10b981 0%, transparent 70%)" }} />
+            <div className="relative p-6 sm:p-8 flex flex-col md:flex-row md:items-center gap-6">
+              <div className="flex-1 min-w-0">
+                <span className="inline-block text-xs font-bold px-2.5 py-1 rounded-full text-white mb-2 bg-emerald-500">
+                  🚀 PROMO DE LANZAMIENTO
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1">$25.000/mes los primeros 3 meses</h3>
+                <p className="text-slate-300 text-sm mb-3">Después se renueva como PRO Mensual ($45.000). Cancelás cuando quieras.</p>
+                <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-slate-200">
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" /> Acceso PRO completo</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" /> Sin límites en nada</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" /> Usuarios ilimitados</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" /> Soporte prioritario</li>
+                </ul>
+              </div>
+              <Link
+                href="/registro"
+                className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition-all hover:scale-[1.02] whitespace-nowrap shadow-lg shadow-emerald-500/30"
+              >
+                Empezar 7 días gratis <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
+          </div>
+
+          <p className="text-center text-sm text-slate-500 mb-6">O elegí el plan PRO directo:</p>
+
+          <div className="grid md:grid-cols-2 gap-5 max-w-3xl mx-auto">
             {/* PRO MENSUAL */}
             <div className="rounded-2xl border-2 border-blue-600 bg-white p-6 relative shadow-xl shadow-blue-600/10">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                Recomendado
+                Más elegido
               </div>
               <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">PRO Mensual</p>
               <p className="text-4xl font-bold mt-2">$45.000</p>
-              <p className="text-sm text-slate-500">por mes</p>
+              <p className="text-sm text-slate-500">por mes · suscripción recurrente</p>
               <ul className="mt-5 space-y-2 text-sm">
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Pólizas ilimitadas</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Cobranzas y siniestros ilimitados</li>
+                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Pólizas, cobranzas, siniestros ilimitados</li>
                 <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Usuarios ilimitados</li>
+                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Email masivo a tus asegurados</li>
                 <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Soporte prioritario</li>
                 <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" /> Cancelás cuando quieras</li>
               </ul>
               <Link href="/registro" className="w-full mt-6 block text-center rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 font-semibold transition-colors">
-                Probar PRO
+                Empezar gratis
               </Link>
             </div>
             {/* PRO ANUAL */}
             <div className="rounded-2xl border-2 border-amber-300 bg-white p-6 relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1">
-                <Crown className="h-3 w-3" /> Ahorrás 2 meses
+                <Crown className="h-3 w-3" /> Ahorrás $70.000
               </div>
               <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">PRO Anual</p>
               <p className="text-4xl font-bold mt-2">$470.000</p>
-              <p className="text-sm text-slate-500">por año ($39.166/mes)</p>
+              <p className="text-sm text-slate-500">por año · equivale a $39.166/mes</p>
               <ul className="mt-5 space-y-2 text-sm">
-                <li className="flex gap-2"><Check className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" /> Todo lo de PRO Mensual</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" /> Ahorrás $70.000 por año</li>
+                <li className="flex gap-2"><Check className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" /> Todo lo del PRO Mensual</li>
                 <li className="flex gap-2"><Check className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" /> Precio congelado 12 meses</li>
+                <li className="flex gap-2"><Check className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" /> Un solo pago, sin renovaciones</li>
+                <li className="flex gap-2"><Check className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" /> Ideal si ya estás convencido</li>
               </ul>
               <Link href="/registro" className="w-full mt-6 block text-center rounded-md bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 font-semibold transition-colors">
-                Elegir anual
+                Empezar gratis
               </Link>
             </div>
           </div>
+
+          <p className="text-center text-xs text-slate-500 mt-6">
+            Todos los planes arrancan con 7 días gratis. Pagás recién si decidís seguir.
+          </p>
         </div>
       </section>
 
@@ -180,8 +200,8 @@ export default function LandingPage() {
       {/* CTA FINAL */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Probalo gratis ahora</h2>
-          <p className="mt-3 text-blue-100">Tardás 1 minuto. Sin tarjeta. Empezá a cargar tu primera póliza hoy.</p>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Empezá 7 días gratis ahora</h2>
+          <p className="mt-3 text-blue-100">Sin tarjeta. Sin compromiso. Acceso PRO completo desde el día 1.</p>
           <Link href="/registro" className="inline-flex items-center gap-2 mt-7 rounded-md bg-white text-blue-700 hover:bg-blue-50 px-6 py-3 font-semibold transition-colors">
             Crear mi cuenta gratis <ArrowRight className="h-4 w-4" />
           </Link>
