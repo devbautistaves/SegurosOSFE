@@ -820,9 +820,18 @@ export interface Aseguradora {
 
 export interface SuscripcionEstado {
   plan: "FREE" | "PRO"
-  planStatus: "ACTIVO" | "VENCIDO" | "CANCELADO"
+  planStatus: "ACTIVO" | "VENCIDO" | "CANCELADO" | "TRIAL"
   planTipo: "mensual" | "anual" | null
   planVencimiento?: string | null
+  // Pricing v2 (Fase A)
+  planCodigo?: "TRIAL" | "PROMO" | "PRO_MENSUAL" | "PRO_ANUAL" | "VENCIDO"
+  trialFinaliza?: string | null
+  promoFinaliza?: string | null
+  trial?: {
+    finaliza: string | null
+    diasRestantes: number | null
+    vencido: boolean
+  } | null
   precios: {
     PRO_MENSUAL: { id: string; monto: number; descripcion: string }
     PRO_ANUAL:   { id: string; monto: number; descripcion: string }

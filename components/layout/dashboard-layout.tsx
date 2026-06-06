@@ -6,6 +6,7 @@ import { Sidebar } from "./sidebar"
 import { Header } from "./header"
 import { Spinner } from "@/components/ui/spinner"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
+import { TrialBanner } from "@/components/trial-banner"
 import { User, usersAPI, aseguradoraAPI } from "@/lib/api"
 import { getMaintenanceStatus } from "@/hooks/use-maintenance"
 
@@ -147,6 +148,7 @@ export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col overflow-hidden">
       <ImpersonationBanner />
+      <TrialBanner />
       <div className="flex flex-1 overflow-hidden">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
