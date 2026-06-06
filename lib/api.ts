@@ -797,6 +797,8 @@ export interface RegisterAseguradoraData {
   password: string
   phone?: string
   location?: string
+  // Ley 25.326: el broker debe aceptar T&C explícitamente al alta.
+  terminosAceptados?: boolean
 }
 
 export interface Aseguradora {

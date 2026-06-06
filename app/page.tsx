@@ -218,6 +218,7 @@ export default function LandingPage() {
           <div className="flex gap-5">
             <Link href="/login" className="hover:text-slate-900">Entrar</Link>
             <Link href="/registro" className="hover:text-slate-900">Registrarse</Link>
+            <Link href="/terminos" className="hover:text-slate-900">Términos</Link>
             <a href="mailto:segurosos@tusventas.com.ar" className="hover:text-slate-900">Contacto</a>
           </div>
         </div>

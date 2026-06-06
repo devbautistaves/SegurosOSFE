@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { aseguradoraAPI, suscripcionAPI } from "@/lib/api"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Loader2, Plus, X, Save, Tag, Building2, CreditCard, Upload, Crown, ImageIcon } from "lucide-react"
+import { MisDatosSection } from "@/components/mis-datos-section"
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -268,6 +269,9 @@ export default function ConfigPROPage() {
         <button onClick={guardar} disabled={saving} type="button" className="h-10 px-5 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-2 disabled:opacity-50">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar todos los cambios
         </button>
+
+        {/* Privacidad / Mis datos / Baja — Ley 25.326 */}
+        <MisDatosSection />
       </div>
     </DashboardLayout>
   )

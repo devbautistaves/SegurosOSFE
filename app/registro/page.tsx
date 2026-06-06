@@ -22,6 +22,8 @@ export default function RegistroPage() {
   const set = <K extends keyof RegisterAseguradoraData>(k: K, v: RegisterAseguradoraData[K]) =>
     setForm(prev => ({ ...prev, [k]: v }))
 
+  const [aceptaTerminos, setAceptaTerminos] = useState(false)
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr(null)
@@ -29,12 +31,14 @@ export default function RegistroPage() {
       setErr("Faltan campos obligatorios"); return
     }
     if (form.password.length < 6) { setErr("La contraseña debe tener al menos 6 caracteres"); return }
+    if (!aceptaTerminos) { setErr("Tenés que aceptar los Términos y Condiciones para crear la cuenta"); return }
     setLoading(true)
     try {
       const r = await authAPI.registerAseguradora({
         ...form,
         aseguradoraEmail: form.aseguradoraEmail || form.email,
-      })
+        terminosAceptados: true,
+      } as any)
       localStorage.setItem("token", r.token)
       localStorage.setItem("user", JSON.stringify(r.user))
       localStorage.setItem("aseguradora", JSON.stringify(r.aseguradora))
@@ -111,9 +115,26 @@ export default function RegistroPage() {
               </div>
             </div>
 
+            <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={aceptaTerminos}
+                onChange={e => setAceptaTerminos(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <span>
+                Acepto los{" "}
+                <Link href="/terminos" target="_blank" className="text-blue-600 font-medium hover:underline">
+                  Términos y Condiciones
+                </Link>{" "}
+                y la Política de Privacidad (Ley 25.326). Entiendo que mis datos quedan aislados de otros brokers
+                y que puedo descargarlos o solicitar la baja desde el panel en cualquier momento.
+              </span>
+            </label>
+
             {err && <p className="text-sm text-red-600">{err}</p>}
 
-            <button type="submit" disabled={loading} className="w-full h-11 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="submit" disabled={loading || !aceptaTerminos} className="w-full h-11 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Crear cuenta gratis <ArrowRight className="h-4 w-4" /></>}
             </button>
 
