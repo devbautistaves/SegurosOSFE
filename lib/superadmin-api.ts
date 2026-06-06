@@ -96,6 +96,16 @@ export const saBroadcast = {
     call<{ success: boolean; destinatarios: number; enviados: number; fallidos: number }>(`/broadcast/email`, { method: "POST", body: JSON.stringify(body) }),
   banner: (body: { activo: boolean; texto?: string; color?: string }) =>
     call<{ success: boolean; config: any }>(`/broadcast/banner`, { method: "PUT", body: JSON.stringify(body) }),
+  // Pricing v2 Fase E: blast PROMO de lanzamiento.
+  promoLanzamiento: (body: { dryRun?: boolean } = {}) =>
+    call<{
+      success: boolean
+      dryRun?: boolean
+      total: number
+      ok?: number; fail?: number
+      muestra?: Array<{ nombre: string; email: string; plan?: string; planCodigo?: string }>
+      fails?: Array<{ aseguradoraId: string; email: string; error: string }>
+    }>(`/blast/promo-lanzamiento`, { method: "POST", body: JSON.stringify(body) }),
 }
 
 // Audit log

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Mail, Megaphone, Send, Loader2, Check, AlertTriangle } from "lucide-react"
+import { Mail, Megaphone, Send, Loader2, Check, AlertTriangle, Eye, X, Rocket } from "lucide-react"
 import { saBroadcast, saConfig } from "@/lib/superadmin-api"
 
 export default function ComunicacionPage() {
@@ -9,11 +9,171 @@ export default function ComunicacionPage() {
     <div className="p-6 lg:p-8 space-y-6 max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold text-white">Comunicación</h1>
-        <p className="text-sm text-slate-400 mt-0.5">Email masivo y banner global del sitio</p>
+        <p className="text-sm text-slate-400 mt-0.5">Marketing, email masivo y banner global</p>
       </div>
 
+      <PromoBlastCard />
       <BannerCard />
       <BroadcastCard />
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROMO Blast Card — Pricing v2 Fase E
+// Invita a las aseguradoras FREE/legacy/VENCIDO a tomar la PROMO de $25k×3m.
+// ─────────────────────────────────────────────────────────────────────────────
+function PromoBlastCard() {
+  const [preview, setPreview] = useState<{ total: number; muestra: any[] } | null>(null)
+  const [result, setResult] = useState<{ total: number; ok: number; fail: number } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [error, setError] = useState("")
+
+  const onPreview = async () => {
+    setLoading(true); setError("")
+    try {
+      const r = await saBroadcast.promoLanzamiento({ dryRun: true })
+      setPreview({ total: r.total, muestra: r.muestra || [] })
+    } catch (e: any) { setError(e.message || "Error") }
+    setLoading(false)
+  }
+
+  const onSend = async () => {
+    setLoading(true); setError(""); setConfirmOpen(false)
+    try {
+      const r = await saBroadcast.promoLanzamiento({})
+      setResult({ total: r.total, ok: r.ok ?? 0, fail: r.fail ?? 0 })
+      setPreview(null)
+    } catch (e: any) { setError(e.message || "Error") }
+    setLoading(false)
+  }
+
+  return (
+    <div className="bg-slate-900 rounded-xl border border-emerald-500/20 p-5">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="h-10 w-10 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center flex-shrink-0">
+          <Rocket className="w-5 h-5" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-white font-bold text-base">Blast PROMO de lanzamiento</h3>
+          <p className="text-slate-400 text-sm mt-0.5">
+            Manda 1 email a todas las aseguradoras FREE/legacy/VENCIDO invitándolas a la PROMO de $25.000 × 3 meses.
+            Excluye las que ya están en PROMO/PRO_MENSUAL/PRO_ANUAL.
+          </p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-red-300 text-xs">{error}</p>
+        </div>
+      )}
+
+      {result && (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mb-3">
+          <p className="text-emerald-300 text-sm font-medium flex items-center gap-2">
+            <Check className="w-4 h-4" /> Blast enviado
+          </p>
+          <p className="text-emerald-200 text-xs mt-1">
+            {result.ok} entregados · {result.fail} fallaron · de {result.total} candidatos.
+          </p>
+        </div>
+      )}
+
+      {preview && (
+        <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 mb-3">
+          <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
+            Vista previa — {preview.total} destinatarios
+          </p>
+          {preview.total === 0 ? (
+            <p className="text-slate-500 text-xs italic">Ninguna aseguradora cumple el filtro. No hay nadie a quien escribirle.</p>
+          ) : (
+            <ul className="text-xs text-slate-300 space-y-1 max-h-48 overflow-y-auto">
+              {preview.muestra.map((a, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span className="text-slate-500">{i+1}.</span>
+                  <span className="font-medium">{a.nombre || "(sin nombre)"}</span>
+                  <span className="text-slate-500">·</span>
+                  <span className="text-slate-400">{a.email}</span>
+                  {a.planCodigo && (
+                    <span className="text-[10px] uppercase tracking-wider text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                      {a.planCodigo}
+                    </span>
+                  )}
+                </li>
+              ))}
+              {preview.total > preview.muestra.length && (
+                <li className="text-slate-500 italic pt-1">…y {preview.total - preview.muestra.length} más</li>
+              )}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={onPreview}
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-slate-700 text-white hover:bg-slate-800 transition-all disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+          Ver destinatarios
+        </button>
+        <button
+          onClick={() => setConfirmOpen(true)}
+          disabled={loading || !preview || preview.total === 0}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-all disabled:opacity-50"
+        >
+          <Send className="w-4 h-4" /> Enviar a {preview?.total ?? 0} aseguradoras
+        </button>
+        {(preview || result) && (
+          <button
+            onClick={() => { setPreview(null); setResult(null); setError("") }}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white"
+          >
+            <X className="w-3.5 h-3.5" /> Limpiar
+          </button>
+        )}
+      </div>
+
+      <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+        💡 Mejor práctica: hacé "Ver destinatarios" primero para confirmar el universo. El endpoint NO es idempotente:
+        cada llamada manda emails de nuevo. Throttle de 400ms entre envíos.
+      </p>
+
+      {/* Modal confirmación */}
+      {confirmOpen && preview && (
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-2xl border border-slate-700 max-w-sm w-full p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <Send className="w-5 h-5" />
+              </div>
+              <h3 className="text-white font-bold text-base">Confirmar envío</h3>
+            </div>
+            <p className="text-slate-300 text-sm mb-4">
+              Se van a mandar <strong className="text-emerald-400">{preview.total} emails</strong> a aseguradoras FREE/legacy.
+              Esto puede tardar ~{Math.ceil(preview.total * 0.4)}s.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium border border-slate-700 text-white hover:bg-slate-800"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={onSend}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600"
+              >
+                Sí, enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
