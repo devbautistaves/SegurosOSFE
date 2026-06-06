@@ -97,6 +97,24 @@ export default function AseguradorasPage() {
                         <p className="font-medium text-white hover:text-blue-300">{a.nombre}</p>
                         <p className="text-[11px] text-slate-500">{a.slug} · {a.email || "—"}</p>
                       </Link>
+                      {(a.whatsapp || a.telefono) && (
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {a.whatsapp ? (
+                            <a
+                              href={`https://wa.me/${String(a.whatsapp).replace(/[^0-9]/g, "")}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300"
+                              title="Abrir en WhatsApp"
+                            >
+                              <span>📱</span>{a.whatsapp}
+                            </a>
+                          ) : (
+                            <span className="text-slate-500">📞 {a.telefono}</span>
+                          )}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
