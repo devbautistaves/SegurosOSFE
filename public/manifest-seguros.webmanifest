@@ -1,0 +1,60 @@
+{
+  "id": "/segurosos-crm",
+  "name": "SegurOS — CRM para Brokers",
+  "short_name": "SegurOS",
+  "description": "Tu cartera de seguros ordenada: pólizas, cobranzas, siniestros y recordatorios automáticos.",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "es-AR",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    {
+      "src": "/icons/seguros-icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/seguros-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/seguros-icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/seguros-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pólizas",
+      "short_name": "Pólizas",
+      "url": "/admin/seguros/polizas",
+      "description": "Ver y cargar pólizas"
+    },
+    {
+      "name": "Cobranzas",
+      "short_name": "Cobranzas",
+      "url": "/admin/seguros/cobranzas",
+      "description": "Control mensual de cobranzas"
+    },
+    {
+      "name": "Siniestros",
+      "short_name": "Siniestros",
+      "url": "/admin/seguros/siniestros",
+      "description": "Siniestros en trámite"
+    }
+  ]
+}
