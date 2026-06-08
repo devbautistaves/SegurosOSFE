@@ -897,10 +897,10 @@ export interface SuscripcionEstado {
 export const suscripcionAPI = {
   estado: (token: string) =>
     fetchAPI<{ success: boolean } & SuscripcionEstado>("/api/suscripcion/estado", { token }),
-  checkout: (token: string, plan: "PRO_MENSUAL" | "PRO_ANUAL" | "PROMO", payerEmail?: string) =>
-    fetchAPI<{ success: boolean; init_point: string; preapprovalId?: string; preferenceId?: string; tipo: string }>(
+  checkout: (token: string, plan: "PRO_MENSUAL" | "PRO_ANUAL" | "PROMO") =>
+    fetchAPI<{ success: boolean; init_point: string; preapprovalPlanId?: string; preapprovalId?: string; preferenceId?: string; tipo: string }>(
       "/api/suscripcion/checkout",
-      { method: "POST", body: JSON.stringify({ plan, payerEmail }), token }
+      { method: "POST", body: JSON.stringify({ plan }), token }
     ),
   cancelar: (token: string) =>
     fetchAPI<{ success: boolean }>("/api/suscripcion/cancelar", { method: "POST", token }),
