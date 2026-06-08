@@ -14,6 +14,7 @@ export default function SuscripcionPage() {
   const [loading, setLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
 
   const load = async () => {
     const token = localStorage.getItem("token")
@@ -27,6 +28,37 @@ export default function SuscripcionPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  // Volvió del checkout MP con ?preapproval_id=X → asociar al tenant logueado.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    const preapprovalId = params.get("preapproval_id")
+    if (!preapprovalId) return
+    const token = localStorage.getItem("token")
+    if (!token) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch("/api/proxy/suscripcion/asociar-preapproval", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ preapproval_id: preapprovalId }),
+        })
+        const json = await res.json()
+        if (cancelled) return
+        if (json.success) {
+          setPaymentSuccess(true)
+          await load()
+        } else {
+          setErr(json.error || "No pudimos asociar tu suscripción")
+        }
+      } catch (e: any) {
+        if (!cancelled) setErr(e.message || "Error asociando la suscripción")
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   // Click directo: pegamos al BE, recibimos init_point (plan template MP) y
   // redirigimos. MP usa el email de la cuenta del broker — sin modal de email.
