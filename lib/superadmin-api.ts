@@ -69,6 +69,11 @@ export const saAseguradoras = {
   }>(`/aseguradoras/${id}`),
   forzarPlan: (id: string, body: { plan?: string; planTipo?: string | null; planStatus?: string; planVencimiento?: string; motivo?: string }) =>
     call<{ success: boolean; aseguradora: any }>(`/aseguradoras/${id}/plan`, { method: "PUT", body: JSON.stringify(body) }),
+  // Variante semántica del endpoint anterior. Acción: PROMO_3M | PRO_MENSUAL |
+  // PRO_ANUAL | EXTENDER_TRIAL | CORTAR. El BE setea planCodigo + plan +
+  // planStatus + planVencimiento + promoFinaliza/trialFinaliza coherentes.
+  asignarPlanAccion: (id: string, body: { accion: "PROMO_3M" | "PRO_MENSUAL" | "PRO_ANUAL" | "EXTENDER_TRIAL" | "CORTAR"; dias?: number; motivo: string }) =>
+    call<{ success: boolean; aseguradora: any }>(`/aseguradoras/${id}/plan`, { method: "PUT", body: JSON.stringify(body) }),
   suspend: (id: string, motivo?: string) =>
     call<{ success: boolean; aseguradora: any }>(`/aseguradoras/${id}/suspend`, { method: "PUT", body: JSON.stringify({ motivo }) }),
   reactivate: (id: string) =>

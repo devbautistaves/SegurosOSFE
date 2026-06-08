@@ -99,8 +99,18 @@ export default function AseguradoraDetailPage() {
             <Building2 className="h-7 w-7 text-white" />
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold text-white">{a.nombre}</h1>
+              {a.planCodigo && (
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                  a.planCodigo === "PROMO"       ? "bg-fuchsia-500/20 text-fuchsia-300" :
+                  a.planCodigo === "PRO_MENSUAL" ? "bg-emerald-500/20 text-emerald-300" :
+                  a.planCodigo === "PRO_ANUAL"   ? "bg-emerald-500/20 text-emerald-300" :
+                  a.planCodigo === "TRIAL"       ? "bg-blue-500/20 text-blue-300" :
+                  a.planCodigo === "VENCIDO"     ? "bg-amber-500/20 text-amber-300" :
+                  "bg-slate-500/20 text-slate-400"
+                }`}>{a.planCodigo}</span>
+              )}
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${a.plan === "PRO" ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-500/20 text-slate-400"}`}>{a.plan}</span>
               {a.planTipo && <span className="text-[10px] text-slate-500">{a.planTipo}</span>}
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
@@ -111,10 +121,12 @@ export default function AseguradoraDetailPage() {
               }`}>{!a.activo ? "SUSPENDIDO" : a.planStatus}</span>
             </div>
             <p className="text-sm text-slate-400 mt-1">{a.slug} · {a.email || "—"} · {a.telefono || "sin tel"}</p>
-            <div className="flex gap-6 mt-3 text-xs text-slate-500">
+            <div className="flex gap-6 mt-3 text-xs text-slate-500 flex-wrap">
               <span>CUIT: <span className="text-slate-300">{a.cuit || "—"}</span></span>
               <span>Alta: <span className="text-slate-300">{new Date(a.createdAt).toLocaleDateString("es-AR")}</span></span>
               <span>Vence: <span className="text-slate-300">{a.planVencimiento ? new Date(a.planVencimiento).toLocaleDateString("es-AR") : "—"}</span></span>
+              {a.promoFinaliza && <span>PROMO hasta: <span className="text-fuchsia-300">{new Date(a.promoFinaliza).toLocaleDateString("es-AR")}</span></span>}
+              {a.trialFinaliza && a.planCodigo === "TRIAL" && <span>TRIAL hasta: <span className="text-blue-300">{new Date(a.trialFinaliza).toLocaleDateString("es-AR")}</span></span>}
             </div>
           </div>
         </div>
@@ -229,23 +241,41 @@ function Stat({ icon: Icon, label, value }: any) {
   )
 }
 
+// Modal "Forzar plan" basado en acciones semánticas. El BE setea planCodigo +
+// plan + planStatus + planVencimiento + promoFinaliza/trialFinaliza coherentes,
+// que es lo que mira el broker FE (trial-banner, suscripcion/estado).
+type Accion = "PROMO_3M" | "PRO_MENSUAL" | "PRO_ANUAL" | "EXTENDER_TRIAL" | "CORTAR"
+
+const ACCIONES: { id: Accion; label: string; desc: string; color: string; dias: number; diasEditable: boolean }[] = [
+  { id: "PROMO_3M",       label: "PROMO 3 meses",      desc: "planCodigo=PROMO · plan=PRO · vence en X días · sin preapproval MP",                color: "bg-fuchsia-500 hover:bg-fuchsia-600",  dias: 90,  diasEditable: true },
+  { id: "PRO_MENSUAL",    label: "PRO Mensual",        desc: "planCodigo=PRO_MENSUAL · plan=PRO · ACTIVO · vence en X días",                       color: "bg-emerald-500 hover:bg-emerald-600",  dias: 30,  diasEditable: true },
+  { id: "PRO_ANUAL",      label: "PRO Anual",          desc: "planCodigo=PRO_ANUAL · plan=PRO · ACTIVO · vence en X días",                         color: "bg-emerald-600 hover:bg-emerald-700",  dias: 365, diasEditable: true },
+  { id: "EXTENDER_TRIAL", label: "Extender TRIAL",     desc: "Renueva el período de prueba por X días",                                              color: "bg-blue-500 hover:bg-blue-600",        dias: 7,   diasEditable: true },
+  { id: "CORTAR",         label: "Cortar acceso",      desc: "Pasa a VENCIDO inmediato · overlay full-screen al broker",                             color: "bg-red-500 hover:bg-red-600",          dias: 0,   diasEditable: false },
+]
+
 function PlanModal({ aseguradora, onClose, onSaved }: any) {
-  const [form, setForm] = useState({
-    plan: aseguradora.plan || "FREE",
-    planTipo: aseguradora.planTipo || "",
-    planStatus: aseguradora.planStatus || "ACTIVO",
-    planVencimiento: aseguradora.planVencimiento ? new Date(aseguradora.planVencimiento).toISOString().slice(0, 10) : "",
-    motivo: "",
-  })
+  const [accion, setAccion] = useState<Accion>("PROMO_3M")
+  const [dias, setDias] = useState<number>(90)
+  const [motivo, setMotivo] = useState("")
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState("")
 
+  const current = ACCIONES.find(a => a.id === accion)!
+
+  // Cada vez que se cambia la acción, set dias default
+  const setAccionAndDias = (a: Accion) => {
+    setAccion(a)
+    const def = ACCIONES.find(x => x.id === a)!
+    setDias(def.dias)
+  }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.motivo) { setErr("Indicá un motivo para el audit log"); return }
+    if (!motivo.trim()) { setErr("Indicá un motivo para el audit log"); return }
     setLoading(true); setErr("")
     try {
-      await saAseguradoras.forzarPlan(aseguradora._id, form)
+      await saAseguradoras.asignarPlanAccion(aseguradora._id, { accion, dias: current.diasEditable ? dias : undefined, motivo: motivo.trim() })
       onSaved()
     } catch (e: any) { setErr(e.message) } finally { setLoading(false) }
   }
@@ -253,44 +283,52 @@ function PlanModal({ aseguradora, onClose, onSaved }: any) {
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <form onSubmit={submit} onClick={e => e.stopPropagation()}
-        className="w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-xl p-6 space-y-3">
+        className="w-full max-w-lg bg-[#0a0a0a] border border-white/10 rounded-xl p-6 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Forzar plan</h2>
+          <h2 className="text-lg font-bold text-white">Asignar plan a {aseguradora.nombre}</h2>
           <button type="button" onClick={onClose} className="text-slate-500 hover:text-white"><X className="h-4 w-4" /></button>
         </div>
-        <p className="text-xs text-slate-500">Override manual del plan (cobros por fuera de MP, comp, etc.)</p>
+        <p className="text-xs text-slate-500">Esta acción modifica <span className="text-slate-300 font-mono">planCodigo</span>, que es lo que mira el broker para mostrar banners, bloqueos y permisos. Quedó registrada en el audit log.</p>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Plan">
-            <select value={form.plan} onChange={e => setForm(f => ({ ...f, plan: e.target.value }))} className="w-full px-2 py-2 bg-white/[0.02] border border-white/10 rounded-lg text-sm text-white">
-              <option value="FREE" className="bg-black">FREE</option>
-              <option value="PRO" className="bg-black">PRO</option>
-            </select>
-          </Field>
-          <Field label="Tipo">
-            <select value={form.planTipo} onChange={e => setForm(f => ({ ...f, planTipo: e.target.value }))} className="w-full px-2 py-2 bg-white/[0.02] border border-white/10 rounded-lg text-sm text-white">
-              <option value="" className="bg-black">—</option>
-              <option value="mensual" className="bg-black">Mensual</option>
-              <option value="anual" className="bg-black">Anual</option>
-            </select>
-          </Field>
+        {/* Estado actual */}
+        <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 text-xs">
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Estado actual</p>
+          <div className="flex gap-3 flex-wrap text-slate-300">
+            <span>planCodigo: <span className="font-mono text-white">{aseguradora.planCodigo || "—"}</span></span>
+            <span>plan: <span className="font-mono text-white">{aseguradora.plan}</span></span>
+            <span>status: <span className="font-mono text-white">{aseguradora.planStatus}</span></span>
+            {aseguradora.planVencimiento && <span>vence: <span className="text-white">{new Date(aseguradora.planVencimiento).toLocaleDateString("es-AR")}</span></span>}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Estado">
-            <select value={form.planStatus} onChange={e => setForm(f => ({ ...f, planStatus: e.target.value }))} className="w-full px-2 py-2 bg-white/[0.02] border border-white/10 rounded-lg text-sm text-white">
-              <option value="ACTIVO" className="bg-black">ACTIVO</option>
-              <option value="VENCIDO" className="bg-black">VENCIDO</option>
-              <option value="CANCELADO" className="bg-black">CANCELADO</option>
-            </select>
-          </Field>
-          <Field label="Vence">
-            <input type="date" value={form.planVencimiento} onChange={e => setForm(f => ({ ...f, planVencimiento: e.target.value }))}
-              className="w-full px-2 py-2 bg-white/[0.02] border border-white/10 rounded-lg text-sm text-white" />
-          </Field>
+
+        {/* Botones de acción */}
+        <div className="grid grid-cols-1 gap-2">
+          {ACCIONES.map(a => {
+            const sel = a.id === accion
+            return (
+              <button type="button" key={a.id} onClick={() => setAccionAndDias(a.id)}
+                className={`text-left rounded-lg border px-3 py-2 transition-colors ${sel ? "border-white/30 bg-white/10" : "border-white/10 hover:bg-white/5"}`}>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-block h-2 w-2 rounded-full ${sel ? "bg-white" : "bg-slate-600"}`} />
+                  <span className="text-sm font-semibold text-white">{a.label}</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1 ml-4">{a.desc}</p>
+              </button>
+            )
+          })}
         </div>
+
+        {/* Días editable solo si la acción lo permite */}
+        {current.diasEditable && (
+          <Field label={`Duración en días (default ${current.dias})`}>
+            <input type="number" min={1} max={3650} value={dias} onChange={e => setDias(parseInt(e.target.value) || 0)}
+              className="w-full px-2.5 py-2 bg-white/[0.02] border border-white/10 rounded-lg text-sm text-white" />
+          </Field>
+        )}
+
         <Field label="Motivo *">
-          <input value={form.motivo} onChange={e => setForm(f => ({ ...f, motivo: e.target.value }))} required
-            placeholder="ej: pago externo, regalo cortesía, etc."
+          <input value={motivo} onChange={e => setMotivo(e.target.value)} required
+            placeholder="ej: cortesía, beta-tester, pago externo, etc."
             className="w-full px-2.5 py-2 bg-white/[0.02] border border-white/10 rounded-lg text-sm text-white placeholder-slate-600" />
         </Field>
 
@@ -298,8 +336,8 @@ function PlanModal({ aseguradora, onClose, onSaved }: any) {
 
         <div className="flex gap-2 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-white/10 text-sm text-slate-300 hover:bg-white/5">Cancelar</button>
-          <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50">
-            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Guardar
+          <button type="submit" disabled={loading} className={`flex-1 py-2 rounded-lg text-white text-sm font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50 ${current.color}`}>
+            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Aplicar {current.label}
           </button>
         </div>
       </form>
