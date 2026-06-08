@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { suscripcionAPI, SuscripcionEstado } from "@/lib/api"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { Crown, Check, Loader2, AlertCircle, ExternalLink } from "lucide-react"
+import { Crown, Check, Loader2, AlertCircle, ExternalLink, CreditCard } from "lucide-react"
 
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n)
@@ -14,6 +14,12 @@ export default function SuscripcionPage() {
   const [loading, setLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
+
+  // ── Modal "email MercadoPago" — MP exige payer_email coincidente ────────
+  const [modalEmail, setModalEmail] = useState(false)
+  const [payerEmail, setPayerEmail] = useState("")
+  const [planPendiente, setPlanPendiente] = useState<"PRO_MENSUAL" | "PRO_ANUAL" | "PROMO" | null>(null)
+  const [emailErr, setEmailErr] = useState<string>("")
 
   const load = async () => {
     const token = localStorage.getItem("token")
@@ -28,12 +34,32 @@ export default function SuscripcionPage() {
 
   useEffect(() => { load() }, [])
 
-  const checkout = async (plan: "PRO_MENSUAL" | "PRO_ANUAL") => {
+  const checkout = (plan: "PRO_MENSUAL" | "PRO_ANUAL" | "PROMO") => {
+    // Prefill con email del usuario logueado.
+    let emailPrefill = ""
+    try {
+      const userRaw = localStorage.getItem("user")
+      if (userRaw) emailPrefill = (JSON.parse(userRaw)?.email || "").toLowerCase()
+    } catch {}
+    setPayerEmail(emailPrefill)
+    setPlanPendiente(plan)
+    setEmailErr("")
+    setModalEmail(true)
+  }
+
+  const confirmarEmailYCheckout = async () => {
+    if (!planPendiente) return
+    const email = payerEmail.trim().toLowerCase()
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setEmailErr("Ingresá un email válido (el mismo de tu cuenta MercadoPago).")
+      return
+    }
     const token = localStorage.getItem("token")
     if (!token) return
-    setCheckoutLoading(plan)
+    setModalEmail(false)
+    setCheckoutLoading(planPendiente)
     try {
-      const r = await suscripcionAPI.checkout(token, plan)
+      const r = await suscripcionAPI.checkout(token, planPendiente, email)
       window.location.href = r.init_point
     } catch (e: any) { setErr(e.message); setCheckoutLoading(null) }
   }
@@ -159,6 +185,57 @@ export default function SuscripcionPage() {
       <p className="text-xs text-center text-muted-foreground pt-4">
         Pagos procesados por MercadoPago. Podés cancelar cuando quieras desde esta misma pantalla.
       </p>
+
+      {/* ── Modal "email MercadoPago" ───────────────────────────────────── */}
+      {modalEmail && (
+        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-11 w-11 rounded-xl bg-blue-500/15 text-blue-600 flex items-center justify-center">
+                <CreditCard className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-widest text-blue-600 font-semibold">MercadoPago</p>
+                <h2 className="text-lg font-bold leading-tight">Confirmá tu email de pago</h2>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600 mb-3">
+              Ingresá el email de tu <strong>cuenta MercadoPago</strong> con la que vas a pagar.
+              Tiene que coincidir, sino MP rechaza el pago.
+            </p>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">Email</label>
+            <input
+              type="email"
+              autoFocus
+              value={payerEmail}
+              onChange={(e) => setPayerEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmarEmailYCheckout() }}
+              placeholder="tu-mail@ejemplo.com"
+              className="w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+            {emailErr && (
+              <p className="text-xs text-red-500 mt-2">{emailErr}</p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => { setModalEmail(false); setPlanPendiente(null); setEmailErr("") }}
+                className="flex-1 py-2.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarEmailYCheckout}
+                className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm"
+              >
+                Ir a pagar →
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-3 text-center">
+              ¿No tenés cuenta MercadoPago? Podés crear una gratis en el siguiente paso.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
     </DashboardLayout>
   )
