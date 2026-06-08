@@ -69,6 +69,12 @@ async function proxyRequest(
     headers["X-Company-ID"] = companyId
   }
 
+  // Forward cookies (refresh token) — necesario para /auth/refresh (cookie httpOnly `rt` del BE)
+  const cookieHeader = request.headers.get("cookie")
+  if (cookieHeader) {
+    headers["Cookie"] = cookieHeader
+  }
+
   // Get request body for methods that support it
   let body: BodyInit | undefined
   if (method !== "GET" && method !== "DELETE") {
@@ -98,15 +104,25 @@ async function proxyRequest(
     // Get response data
     const responseData = await response.text()
 
-    // Return response with CORS headers
+    // Return response with CORS headers + Set-Cookie forward (refresh flow)
+    const resHeaders = new Headers({
+      "Content-Type": response.headers.get("Content-Type") || "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Company-ID, Cookie",
+    })
+    // Reenviar Set-Cookie (puede haber múltiples: `rt` para refresh, etc).
+    // Usamos getSetCookie() si está disponible (Node 18+); fallback a get('set-cookie').
+    const sc = (response.headers as any).getSetCookie?.() ?? null
+    if (Array.isArray(sc)) {
+      for (const c of sc) resHeaders.append("set-cookie", c)
+    } else {
+      const single = response.headers.get("set-cookie")
+      if (single) resHeaders.append("set-cookie", single)
+    }
     return new NextResponse(responseData, {
       status: response.status,
-      headers: {
-        "Content-Type": response.headers.get("Content-Type") || "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Company-ID",
-      },
+      headers: resHeaders,
     })
   } catch (error) {
     console.error("Proxy error:", error)

@@ -12,6 +12,44 @@ function getStoredCompanyId(): string {
   return "seguros"
 }
 
+// __FETCHAPI_REFRESH_V2__
+// Coalescing global del refresh: si dos requests fallan a la vez, hacemos
+// UN solo POST /auth/refresh y los dos reintentan con el token nuevo.
+let _inflightRefresh: Promise<string | null> | null = null
+
+async function tryRefreshToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null
+  if (_inflightRefresh) return _inflightRefresh
+  _inflightRefresh = (async () => {
+    try {
+      const r = await fetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",   // necesario para que la cookie httpOnly `rt` viaje
+        headers: { "Content-Type": "application/json", "X-Company-ID": getStoredCompanyId() },
+      })
+      if (!r.ok) return null
+      const d = await r.json().catch(() => null)
+      if (!d?.success || !d?.token) return null
+      localStorage.setItem("token", d.token)
+      if (d.user) localStorage.setItem("user", JSON.stringify(d.user))
+      return d.token as string
+    } catch {
+      return null
+    } finally {
+      // liberar slot luego de que terminen de leerlo los await en cola
+      setTimeout(() => { _inflightRefresh = null }, 50)
+    }
+  })()
+  return _inflightRefresh
+}
+
+function forceLogoutToLogin() {
+  if (typeof window === "undefined") return
+  localStorage.removeItem("token")
+  localStorage.removeItem("user")
+  window.location.href = "/login"
+}
+
 async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { token, companyId, ...fetchOptions } = options
 
@@ -25,39 +63,53 @@ async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}): Promis
   }
 
   // If using proxy, strip /api prefix since proxy adds it back
-  // endpoint comes as "/api/something", proxy expects "something"
   let url: string
   if (API_URL === "/api/proxy") {
-    // Remove leading /api/ from endpoint for proxy
     const proxyPath = endpoint.replace(/^\/api\//, "")
     url = `${API_URL}/${proxyPath}`
   } else {
     url = `${API_URL}${endpoint}`
   }
 
-  const response = await fetch(url, {
-    ...fetchOptions,
-    headers,
-  })
+  // credentials:include permite que la cookie `rt` viaje al backend
+  // (vía el proxy que ahora la reenvía).
+  const doFetch = (extraHeaders: Record<string, string> = {}) =>
+    fetch(url, { ...fetchOptions, credentials: "include", headers: { ...headers, ...extraHeaders } })
 
-  const responseText = await response.text()
-  
-  let data
+  let response = await doFetch()
+  let responseText = await response.text()
+
+  let data: any
   try {
     data = JSON.parse(responseText)
   } catch {
     data = { success: false, message: responseText || "Error de conexion" }
   }
 
+  // Token expirado → intentar refresh transparente y reintentar UNA vez
+  const isExpired =
+    response.status === 401 &&
+    (data?.expired === true || data?.code === "TOKEN_EXPIRED")
+  // No reintentar el propio refresh (evita loop) ni si el caller pidió evitarlo
+  const skipRefresh = endpoint.includes("/auth/refresh") || (fetchOptions as any)._retried === true
+
+  if (isExpired && !skipRefresh) {
+    const newToken = await tryRefreshToken()
+    if (newToken) {
+      response = await doFetch({ Authorization: `Bearer ${newToken}` })
+      responseText = await response.text()
+      try { data = JSON.parse(responseText) } catch { data = { success: false, message: responseText } }
+    } else {
+      // El refresh falló (cookie ausente, refresh token vencido, etc) → logout
+      forceLogoutToLogin()
+      throw new Error("Sesión expirada — iniciá sesión de nuevo")
+    }
+  }
+
   if (!response.ok) {
-    // Solo redirigir a login si el token expiro (401), no en 403 (permisos)
-    // El 403 puede ocurrir cuando un rol intenta acceder a endpoints de otro rol
+    // 401 sin expired: token corrupto / sin auth → login limpio
     if (response.status === 401) {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token")
-        localStorage.removeItem("user")
-        window.location.href = "/login"
-      }
+      forceLogoutToLogin()
     }
     throw new Error(data.message || data.error || `Error ${response.status}`)
   }
