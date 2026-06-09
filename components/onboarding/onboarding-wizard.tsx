@@ -13,6 +13,7 @@ import { useEffect, useState } from "react"
 import { onboardingAPI, type OnboardingState, type OnboardingStep } from "@/lib/api"
 import { FaseBranding } from "./fase-branding"
 import { FasePrimerPoliza } from "./fase-primer-poliza"
+import { FaseEmailCobranza } from "./fase-email-cobranza"
 import { Sparkles, X, Check, Clock, FileText, CreditCard, Palette, Trophy } from "lucide-react"
 
 interface Props {
@@ -146,9 +147,10 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
           />
         )}
         {state.currentStep === "cobranza" && (
-          <PlaceholderFase
-            title="Fase 3 · Email de cobranza"
-            desc="Próxima sesión: mandá tu primer email de aviso de vencimiento con tu branding."
+          <FaseEmailCobranza
+            primerPolizaId={state.primerPolizaId}
+            primerPolizaEsPrueba={!!state.primerPolizaEsPrueba}
+            onEmailEnviado={(fechaIso) => advance({ primerEmailEnviadoEn: fechaIso })}
             onSkipFase={() => goNextFase("done", 0)}
             onPrevFase={() => goNextFase("poliza", 0)}
           />
@@ -192,19 +194,6 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
 }
 
 // ── Sub-pantallas ────────────────────────────────────────────────────────────
-
-function PlaceholderFase({ title, desc, onSkipFase, onPrevFase }: { title: string; desc: string; onSkipFase: () => void; onPrevFase: () => void }) {
-  return (
-    <div className="max-w-md mx-auto text-center space-y-4 py-10">
-      <h2 className="text-2xl font-bold text-white">{title}</h2>
-      <p className="text-sm text-slate-400">{desc}</p>
-      <div className="flex gap-2 justify-center">
-        <button onClick={onPrevFase} className="px-4 py-2 rounded-lg border border-white/10 text-sm text-slate-300 hover:bg-white/5">← Volver</button>
-        <button onClick={onSkipFase} className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold">Saltar esta fase →</button>
-      </div>
-    </div>
-  )
-}
 
 function DoneScreen({ primerPolizaId, primerEmailEnviadoEn, onClose }: { primerPolizaId: string | null; primerEmailEnviadoEn: string | null; onClose: () => void }) {
   useEffect(() => {

@@ -2980,6 +2980,7 @@ export interface EmailNotificacion {
 
 export interface CobranzaEfectivo {
   _id: string
+  polizaId?: string
   sucursal?: string
   diaVto?: number
   numeroCuotasTotal?: number | null
