@@ -10,11 +10,12 @@
 // normal. El tour viejo (driver.js) coexiste pero queda cortocircuitado.
 
 import { useEffect, useState } from "react"
-import { onboardingAPI, type OnboardingState, type OnboardingStep } from "@/lib/api"
+import confetti from "canvas-confetti"
+import { onboardingAPI, segurosAPI, type OnboardingState, type OnboardingStep } from "@/lib/api"
 import { FaseBranding } from "./fase-branding"
 import { FasePrimerPoliza } from "./fase-primer-poliza"
 import { FaseEmailCobranza } from "./fase-email-cobranza"
-import { Sparkles, X, Check, Clock, FileText, CreditCard, Palette, Trophy } from "lucide-react"
+import { Sparkles, Check, Clock, FileText, CreditCard, Palette, Trophy, Trash2, Loader2 } from "lucide-react"
 
 interface Props {
   onClose: () => void
@@ -159,6 +160,7 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
           <DoneScreen
             primerPolizaId={state.primerPolizaId}
             primerEmailEnviadoEn={state.primerEmailEnviadoEn}
+            primerPolizaEsPrueba={!!state.primerPolizaEsPrueba}
             onClose={doComplete}
           />
         )}
@@ -195,36 +197,58 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
 
 // ── Sub-pantallas ────────────────────────────────────────────────────────────
 
-function DoneScreen({ primerPolizaId, primerEmailEnviadoEn, onClose }: { primerPolizaId: string | null; primerEmailEnviadoEn: string | null; onClose: () => void }) {
+function DoneScreen({ primerPolizaId, primerEmailEnviadoEn, primerPolizaEsPrueba, onClose }:
+  { primerPolizaId: string | null; primerEmailEnviadoEn: string | null; primerPolizaEsPrueba: boolean; onClose: () => void }) {
+  // Datos de la póliza de prueba (para ofrecer borrarla)
+  const [pruebaNombre, setPruebaNombre] = useState<string | null>(null)
+  const [cobranzaId, setCobranzaId] = useState<string | null>(null)
+  const [borrando, setBorrando] = useState(false)
+  const [borrada, setBorrada] = useState(false)
+  const [borrarErr, setBorrarErr] = useState("")
+
+  // Confetti real (canvas-confetti) en un par de ráfagas
   useEffect(() => {
-    // Mini confetti casero (sin librerias todavía — Fase 4 lo polish)
-    const target = document.getElementById("done-celebrate")
-    if (!target) return
-    const colors = ["#3b82f6","#a855f7","#10b981","#f59e0b","#ef4444"]
-    const pieces = Array.from({ length: 50 }, (_, i) => {
-      const el = document.createElement("div")
-      el.style.position = "absolute"
-      el.style.left = `${Math.random() * 100}%`
-      el.style.top = "-10px"
-      el.style.width = "8px"
-      el.style.height = "8px"
-      el.style.background = colors[i % colors.length]
-      el.style.borderRadius = "2px"
-      el.style.transform = `rotate(${Math.random() * 360}deg)`
-      el.style.transition = "all 2.5s ease-out"
-      target.appendChild(el)
-      setTimeout(() => {
-        el.style.top = "100%"
-        el.style.transform = `rotate(${Math.random() * 720}deg) translateX(${(Math.random() - 0.5) * 200}px)`
-        el.style.opacity = "0"
-      }, 50 + Math.random() * 200)
-      return el
-    })
-    return () => { pieces.forEach(p => p.remove()) }
+    const fire = (particleRatio: number, opts: confetti.Options) =>
+      confetti({ origin: { y: 0.6 }, ...opts, particleCount: Math.floor(220 * particleRatio) })
+    fire(0.25, { spread: 26, startVelocity: 55 })
+    fire(0.2, { spread: 60 })
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 })
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 })
+    fire(0.1, { spread: 120, startVelocity: 45 })
   }, [])
 
+  // Si la primera póliza fue de prueba, buscamos su cobranza vinculada para
+  // poder ofrecer borrar ambas con el nombre real en el botón.
+  useEffect(() => {
+    if (!primerPolizaEsPrueba || !primerPolizaId) return
+    const token = localStorage.getItem("token") || ""
+    if (!token) return
+    segurosAPI.getCobranzas(token)
+      .then(r => {
+        const c = (r.cobranzas || []).find(x => x.polizaId === primerPolizaId)
+        if (c) { setPruebaNombre(c.nombreApellido); setCobranzaId(c._id) }
+      })
+      .catch(() => {})
+  }, [primerPolizaEsPrueba, primerPolizaId])
+
+  const borrarPrueba = async () => {
+    if (!primerPolizaId) return
+    setBorrando(true); setBorrarErr("")
+    try {
+      const token = localStorage.getItem("token") || ""
+      if (!token) throw new Error("Sin sesión")
+      if (cobranzaId) { try { await segurosAPI.deleteCobranza(token, cobranzaId) } catch {} }
+      await segurosAPI.deletePoliza(token, primerPolizaId)
+      setBorrada(true)
+    } catch (e: any) {
+      setBorrarErr(e?.message || "No se pudo borrar la póliza de prueba")
+    } finally {
+      setBorrando(false)
+    }
+  }
+
   return (
-    <div id="done-celebrate" className="relative max-w-lg mx-auto text-center space-y-6 py-12 overflow-hidden">
+    <div className="relative max-w-lg mx-auto text-center space-y-6 py-12">
       <div className="inline-flex h-20 w-20 rounded-full bg-gradient-to-br from-emerald-500 to-blue-500 items-center justify-center shadow-lg shadow-blue-500/30">
         <Trophy className="h-10 w-10 text-white" />
       </div>
@@ -237,6 +261,26 @@ function DoneScreen({ primerPolizaId, primerEmailEnviadoEn, onClose }: { primerP
         <Logro done={!!primerPolizaId} label="Primera póliza cargada con datos reales" />
         <Logro done={!!primerEmailEnviadoEn} label="Primer email enviado a un cliente" />
       </div>
+
+      {/* Borrar póliza de prueba */}
+      {primerPolizaEsPrueba && !borrada && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-left space-y-2">
+          <p className="text-sm text-amber-100">
+            ¿La póliza{pruebaNombre ? <> de <b>{pruebaNombre}</b></> : null} era solo de prueba? Borrala y arrancá con tu base limpia.
+          </p>
+          {borrarErr && <p className="text-xs text-red-300">{borrarErr}</p>}
+          <button onClick={borrarPrueba} disabled={borrando}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-xs font-semibold hover:bg-red-500/20 disabled:opacity-50">
+            {borrando ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Borrando...</> : <><Trash2 className="h-3.5 w-3.5" /> Borrar {pruebaNombre ? `"${pruebaNombre}"` : "la póliza de prueba"}</>}
+          </button>
+        </div>
+      )}
+      {borrada && (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200 flex items-center justify-center gap-2">
+          <Check className="h-4 w-4" /> Póliza de prueba eliminada. Tu base quedó limpia.
+        </div>
+      )}
+
       <button onClick={onClose} className="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white text-base font-semibold">
         Empezar a usar SegurOS →
       </button>
