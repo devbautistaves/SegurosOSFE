@@ -186,6 +186,16 @@ export function FasePrimerPoliza({ initialSubStep = 0, onSubStepChange, onPoliza
           {current.title}
         </h2>
         <p className="text-sm text-slate-400 mt-1">{current.desc}</p>
+        {subStep === 0 && (
+          <a
+            href="/admin/seguros/polizas/importar"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex items-center gap-1.5 text-xs text-blue-300 hover:text-blue-200 underline-offset-2 hover:underline"
+          >
+            ¿Tenés muchas pólizas? Importá tu cartera desde Excel/CSV →
+          </a>
+        )}
       </div>
 
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">

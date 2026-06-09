@@ -25,7 +25,7 @@ import { buscarLocalidad, type LocalidadAR } from "@/lib/localidades-ar"
 import {
   Shield, Plus, Search, Filter, Edit2, Trash2, X, CheckCircle2,
   XCircle, Clock, Car, Bike, Home, User, Banknote, ChevronLeft, ChevronRight,
-  Loader2, UserCheck, MapPin, Crown, Sparkles, Zap, RefreshCw,
+  Loader2, UserCheck, MapPin, Crown, Sparkles, Zap, RefreshCw, Upload,
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -381,10 +381,18 @@ function PolizasPageInner() {
             </h1>
             <p className="text-muted-foreground">{total} pólizas encontradas</p>
           </div>
-          <Button onClick={openCreate} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Póliza
-          </Button>
+          <div className="flex gap-2">
+            <Link href="/admin/seguros/polizas/importar">
+              <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
+                <Upload className="mr-2 h-4 w-4" />
+                Importar
+              </Button>
+            </Link>
+            <Button onClick={openCreate} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva Póliza
+            </Button>
+          </div>
         </div>
 
         {/* Month filter */}
