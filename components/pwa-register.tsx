@@ -45,11 +45,45 @@ export function PWARegister() {
       })
     }
 
+    // ── Auto-recovery ante chunk mismatch ───────────────────────────────
+    // Cuando se publica un deploy nuevo, los chunks JS cambian de hash. Si
+    // el browser tiene un HTML viejo (de la pestaña ya abierta) y pide un
+    // chunk con hash viejo, Next dispara "Loading chunk X failed" o
+    // "Cannot read properties of undefined (reading 'key')" al hidratar.
+    // Solución: detectarlo y recargar fuerte una sola vez.
+    const onChunkError = (msg: string) => {
+      if (typeof window === "undefined") return
+      const k = "_chunk_reload_done"
+      if (sessionStorage.getItem(k)) return // ya recargamos una vez en esta sesión, evitamos loop
+      const looksLikeChunkError =
+        msg.includes("Loading chunk") ||
+        msg.includes("ChunkLoadError") ||
+        msg.includes("Failed to fetch dynamically imported module") ||
+        msg.includes("undefined (reading 'key')")
+      if (!looksLikeChunkError) return
+      sessionStorage.setItem(k, "1")
+      // Limpia cache del browser y SW antes de recargar.
+      if ("caches" in window) caches.keys().then(ks => ks.forEach(k => caches.delete(k)))
+      if (navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()))
+      }
+      window.location.reload()
+    }
+    const errHandler = (e: ErrorEvent) => onChunkError(e.message || "")
+    const rejHandler = (e: PromiseRejectionEvent) => onChunkError(String(e.reason?.message || e.reason || ""))
+    window.addEventListener("error", errHandler)
+    window.addEventListener("unhandledrejection", rejHandler)
+    const teardown = () => {
+      window.removeEventListener("error", errHandler)
+      window.removeEventListener("unhandledrejection", rejHandler)
+    }
+
     return () => {
       // Al salir de /admin (logout, navegar a /, etc.) limpiamos los tags PWA.
       // No removemos el SW registrado — sigue corriendo y la app instalada sigue
       // siendo "instalable" hasta que el usuario la cierre.
       document.querySelectorAll("[data-pwa]").forEach(el => el.remove())
+      teardown()
     }
   }, [])
 
