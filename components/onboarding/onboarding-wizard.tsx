@@ -12,6 +12,7 @@
 import { useEffect, useState } from "react"
 import { onboardingAPI, type OnboardingState, type OnboardingStep } from "@/lib/api"
 import { FaseBranding } from "./fase-branding"
+import { FasePrimerPoliza } from "./fase-primer-poliza"
 import { Sparkles, X, Check, Clock, FileText, CreditCard, Palette, Trophy } from "lucide-react"
 
 interface Props {
@@ -130,10 +131,17 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
           />
         )}
         {state.currentStep === "poliza" && (
-          <PlaceholderFase
-            title="Fase 2 · Tu primera póliza"
-            desc="Próxima sesión: wizard guiado para cargar tu primer asegurado con datos reales."
-            onSkipFase={() => goNextFase("cobranza", 0)}
+          <FasePrimerPoliza
+            initialSubStep={state.subStep || 0}
+            onSubStepChange={(subStep) => advance({ subStep })}
+            onPolizaCreada={(polizaId, esPrueba) => {
+              advance({
+                currentStep: "cobranza",
+                subStep: 0,
+                primerPolizaId: polizaId,
+                primerPolizaEsPrueba: esPrueba,
+              })
+            }}
             onPrevFase={() => goNextFase("branding", 0)}
           />
         )}
