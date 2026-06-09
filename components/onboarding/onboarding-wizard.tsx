@@ -7,7 +7,7 @@
 //
 // Trigger: lo monta `OnboardingTrigger` en `/app/admin/layout.tsx` cuando detecta
 // !completedAt && !skippedAt. Una vez que termina, el broker queda en el panel
-// normal. El tour viejo (driver.js) coexiste pero queda cortocircuitado.
+// normal. (El tour viejo de driver.js fue removido.)
 
 import { useEffect, useState } from "react"
 import confetti from "canvas-confetti"
