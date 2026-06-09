@@ -76,8 +76,26 @@ export function OnboardingTour() {
     try {
       const u = JSON.parse(userRaw)
       if (u?.onboardingPendiente) {
-        startedRef.current = true
-        setTimeout(() => startTour(), 800)
+        // El wizard nuevo (OnboardingTrigger) tiene prioridad. Chequeamos su
+        // state y si está pendiente, NO arrancamos el tour viejo de driver.js.
+        ;(async () => {
+          try {
+            const token = localStorage.getItem("token") || ""
+            if (token) {
+              const r = await fetch("/api/proxy/onboarding/state", {
+                headers: { Authorization: `Bearer ${token}`, "X-Company-ID": "seguros" },
+              }).then(r => r.json()).catch(() => null)
+              const ob = r?.onboarding
+              if (ob && !ob.completedAt && !ob.skippedAt) {
+                // El wizard nuevo va a aparecer — lo dejamos a él
+                return
+              }
+            }
+          } catch {}
+          // Wizard nuevo no aplica → tour viejo se ejecuta
+          startedRef.current = true
+          setTimeout(() => startTour(), 800)
+        })()
       }
     } catch {}
   }, [])

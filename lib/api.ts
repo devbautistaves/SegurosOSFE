@@ -924,6 +924,39 @@ export const aseguradoraAPI = {
     ),
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Onboarding interactivo (Aseguradora) — nuevo flow jun 2026
+// ─────────────────────────────────────────────────────────────────────────────
+export type OnboardingStep = "branding" | "poliza" | "cobranza" | "done"
+
+export interface OnboardingState {
+  currentStep: OnboardingStep
+  subStep: number
+  startedAt: string | null
+  completedAt: string | null
+  skippedAt: string | null
+  primerPolizaId: string | null
+  primerEmailEnviadoEn: string | null
+  primerPolizaEsPrueba: boolean
+}
+
+export const onboardingAPI = {
+  state: (token: string) =>
+    fetchAPI<{ success: boolean; onboarding: OnboardingState }>("/api/onboarding/state", { token }),
+  advance: (token: string, data: Partial<Pick<OnboardingState, "currentStep" | "subStep" | "primerPolizaId" | "primerEmailEnviadoEn" | "primerPolizaEsPrueba">>) =>
+    fetchAPI<{ success: boolean; onboarding: OnboardingState }>("/api/onboarding/advance", {
+      method: "POST", body: JSON.stringify(data), token,
+    }),
+  skip: (token: string) =>
+    fetchAPI<{ success: boolean }>("/api/onboarding/skip", { method: "POST", token }),
+  complete: (token: string) =>
+    fetchAPI<{ success: boolean }>("/api/onboarding/complete", { method: "POST", token }),
+  reopen: (token: string, step?: OnboardingStep) =>
+    fetchAPI<{ success: boolean }>("/api/onboarding/reopen", {
+      method: "POST", body: JSON.stringify({ step }), token,
+    }),
+}
+
 export interface CreateUserData {
   companyId: "prosegur" | "tupaginaya"
   name: string
