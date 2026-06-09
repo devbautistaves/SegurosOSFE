@@ -292,15 +292,15 @@ function StepPoliza({ draft, setDraft, aseguradoras, ramos }: any) {
     <div className="space-y-3">
       <Row>
         <Field label="Aseguradora">
-          <select value={draft.aseguradora} onChange={e => set("aseguradora", e.target.value)} className={inp}>
-            <option value="">— Elegí una —</option>
-            {aseguradoras.map((a: string) => <option key={a} value={a}>{a}</option>)}
+          <select value={draft.aseguradora} onChange={e => set("aseguradora", e.target.value)} className={selectInp}>
+            <option value="" className={optCls}>— Elegí una —</option>
+            {aseguradoras.map((a: string) => <option key={a} value={a} className={optCls}>{a}</option>)}
           </select>
         </Field>
         <Field label="Ramo">
-          <select value={draft.ramo} onChange={e => set("ramo", e.target.value)} className={inp}>
-            <option value="">— Elegí uno —</option>
-            {ramos.map((r: string) => <option key={r} value={r}>{r}</option>)}
+          <select value={draft.ramo} onChange={e => set("ramo", e.target.value)} className={selectInp}>
+            <option value="" className={optCls}>— Elegí uno —</option>
+            {ramos.map((r: string) => <option key={r} value={r} className={optCls}>{r}</option>)}
           </select>
         </Field>
       </Row>
@@ -361,12 +361,12 @@ function StepCobranza({ draft, setDraft }: any) {
   return (
     <div className="space-y-3">
       <Field label="Medio de pago">
-        <select value={draft.medioDePago} onChange={e => set("medioDePago", e.target.value)} className={inp}>
-          <option value="EFECTIVO">Efectivo</option>
-          <option value="CUPON">Cupón</option>
-          <option value="CBU">Débito automático (CBU)</option>
-          <option value="TARJ_CRED">Tarjeta de crédito</option>
-          <option value="OTRO">Otro</option>
+        <select value={draft.medioDePago} onChange={e => set("medioDePago", e.target.value)} className={selectInp}>
+          <option value="EFECTIVO" className={optCls}>Efectivo</option>
+          <option value="CUPON" className={optCls}>Cupón</option>
+          <option value="CBU" className={optCls}>Débito automático (CBU)</option>
+          <option value="TARJ_CRED" className={optCls}>Tarjeta de crédito</option>
+          <option value="OTRO" className={optCls}>Otro</option>
         </select>
       </Field>
       {!["EFECTIVO","CUPON"].includes(draft.medioDePago) && (
@@ -383,6 +383,10 @@ function StepCobranza({ draft, setDraft }: any) {
 // ── Helpers visuales ─────────────────────────────────────────────────────────
 
 const inp = "w-full px-3 py-2 bg-white/[0.02] border border-white/10 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50"
+// Los <select> necesitan fondo SÓLIDO (no bg-white/[0.02] casi transparente),
+// si no el popup nativo de opciones del navegador se ve blanco con texto blanco.
+const selectInp = "w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500/50"
+const optCls = "bg-slate-900 text-white"
 
 function Row({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{children}</div>
