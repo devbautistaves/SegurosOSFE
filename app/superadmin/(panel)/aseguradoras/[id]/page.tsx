@@ -61,18 +61,10 @@ export default function AseguradoraDetailPage() {
 
   const eliminar = async () => {
     const a = data.aseguradora
-    const ok = confirm(`¿Eliminar "${a.nombre}" y TODOS sus datos (pólizas, cobranzas, siniestros, pagos y usuarios)?\n\nEsta acción es irreversible.`)
-    if (!ok) return
-    const conf = prompt(`Para confirmar, escribí el nombre del broker:\n${a.nombre}`)
-    if (conf == null) return
-    if (conf.trim().toLowerCase() !== String(a.nombre).trim().toLowerCase()) {
-      alert("El nombre no coincide. No se eliminó nada.")
-      return
-    }
+    if (!confirm(`¿Eliminar "${a.nombre}" y todos sus datos? Esta acción es irreversible.`)) return
     setBusy(true)
     try {
       await saAseguradoras.remove(id)
-      alert(`"${a.nombre}" eliminada.`)
       router.push("/superadmin/aseguradoras")
     } catch (e: any) { alert(e.message) } finally { setBusy(false) }
   }
