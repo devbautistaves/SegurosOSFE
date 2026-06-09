@@ -42,7 +42,8 @@ const RAMOS_DEFAULT = [
   "FLOTA_AUTOMOTOR", "OTRO",
 ]
 const ESTADOS = ["VIGENTE", "A_RENOVAR", "NO_VIGENTE", "ANULADA", "PENDIENTE_CLIENTE"]
-const MEDIOS_PAGO = ["TARJ_CRED", "CBU", "CUPON", "OTRO"]
+// Defaults — se usan si la aseguradora no tiene catálogo propio guardado.
+const MEDIOS_PAGO_DEFAULT = ["TARJ_CRED", "CBU", "EFECTIVO", "CUPON", "OTRO"]
 
 const RAMO_LABELS: Record<string, string> = {
   AUTOS: "Autos", MOTOS: "Motos", HOGAR: "Hogar", INCENDIO: "Incendio",
@@ -101,7 +102,7 @@ const PAGE_SIZE = 50
 
 function PolizasPageInner() {
   const searchParams = useSearchParams()
-  const { aseguradoras: ASEGURADORAS, ramos: RAMOS } = useCatalogos(ASEGURADORAS_DEFAULT, RAMOS_DEFAULT)
+  const { aseguradoras: ASEGURADORAS, ramos: RAMOS, mediosPago: MEDIOS_PAGO } = useCatalogos(ASEGURADORAS_DEFAULT, RAMOS_DEFAULT, MEDIOS_PAGO_DEFAULT)
 
   const [polizas, setPolizas] = useState<Poliza[]>([])
   const [total, setTotal] = useState(0)

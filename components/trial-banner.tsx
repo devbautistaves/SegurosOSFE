@@ -141,7 +141,7 @@ function BloqueoVencido() {
         </div>
 
         <p className="text-sm text-slate-600 mb-5">
-          Los 7 días gratis se terminaron. Tus datos siguen guardados — para crear
+          Los 3 días gratis se terminaron. Tus datos siguen guardados — para crear
           pólizas, cobranzas y siniestros nuevos, elegí un plan.
         </p>
 

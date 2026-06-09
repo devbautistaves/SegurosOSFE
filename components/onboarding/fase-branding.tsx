@@ -87,34 +87,34 @@ export function FaseBranding({ initialSubStep = 0, onSubStepChange, onFaseComple
     try {
       const token = localStorage.getItem("token") || ""
       if (!token) throw new Error("Sin sesión")
-      // Guardamos el estado parcial en BE en cada paso. /me acepta los campos
-      // top (nombre, logo, colorPrimario, whatsapp). Los catálogos van por
-      // /catalogos.
-      const meFields = {
-        nombre: draft.nombre, logo: draft.logo,
-        colorPrimario: draft.colorPrimario, whatsapp: draft.whatsapp,
+      // Bug histórico: si guardábamos los 3 catálogos del draft en cada
+      // sub-step, los que aún no había tocado el broker iban como []  y
+      // PISABAN el catálogo en BD. Ahora guardamos solo lo que toca al
+      // sub-step actual.
+      const meFieldsByStep: Record<string, any> = {
+        logo:     { logo: draft.logo },
+        color:    { colorPrimario: draft.colorPrimario },
+        nombre:   { nombre: draft.nombre },
+        whatsapp: { whatsapp: draft.whatsapp },
       }
-      await aseguradoraAPI.updateMe(token, meFields as any)
-      await aseguradoraAPI.updateCatalogos(token, {
-        aseguradorasCatalogo: draft.aseguradorasCatalogo,
-        ramosCatalogo: draft.ramosCatalogo,
-        medioDePagoCatalogo: draft.medioDePagoCatalogo,
-      })
+      const catByStep: Record<string, any> = {
+        aseg:   { aseguradorasCatalogo: draft.aseguradorasCatalogo },
+        ramos:  { ramosCatalogo: draft.ramosCatalogo },
+        medios: { medioDePagoCatalogo: draft.medioDePagoCatalogo },
+      }
+      const me = meFieldsByStep[current.key]
+      const cat = catByStep[current.key]
+      if (me) await aseguradoraAPI.updateMe(token, me)
+      if (cat) await aseguradoraAPI.updateCatalogos(token, cat)
 
-      // Refrescamos localStorage para que el sidebar real y los dropdowns de
-      // pólizas/cobranzas/siniestros (que leen via useCatalogos) se redibujen.
-      // OJO: hay que persistir TAMBIÉN los catálogos, no solo meFields, si no
-      // la personalización de aseguradoras/ramos/medios "no anda" en el panel.
+      // Refrescamos localStorage SOLO con lo que cambió en este sub-step para
+      // no pisar catálogos vacíos. El sidebar y los dropdowns leen via
+      // useCatalogos que reacciona a "branding-updated".
       try {
         const stored = localStorage.getItem("aseguradora")
         const base = stored ? JSON.parse(stored) : {}
-        localStorage.setItem("aseguradora", JSON.stringify({
-          ...base,
-          ...meFields,
-          aseguradorasCatalogo: draft.aseguradorasCatalogo,
-          ramosCatalogo: draft.ramosCatalogo,
-          medioDePagoCatalogo: draft.medioDePagoCatalogo,
-        }))
+        const merged = { ...base, ...(me || {}), ...(cat || {}) }
+        localStorage.setItem("aseguradora", JSON.stringify(merged))
         window.dispatchEvent(new Event("branding-updated"))
       } catch {}
 
