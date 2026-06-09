@@ -15,7 +15,7 @@ import { onboardingAPI, segurosAPI, type OnboardingState, type OnboardingStep } 
 import { FaseBranding } from "./fase-branding"
 import { FasePrimerPoliza } from "./fase-primer-poliza"
 import { FaseEmailCobranza } from "./fase-email-cobranza"
-import { Sparkles, Check, Clock, FileText, CreditCard, Palette, Trophy, Trash2, Loader2 } from "lucide-react"
+import { Sparkles, Check, Clock, FileText, CreditCard, Palette, Trophy, Trash2, Loader2, Gift, ArrowRight, ShieldCheck } from "lucide-react"
 
 interface Props {
   onClose: () => void
@@ -79,6 +79,11 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
   const isDone = state.currentStep === "done" || !!state.completedAt
   const goNextFase = (faseDestino: OnboardingStep, subStep = 0) => advance({ currentStep: faseDestino, subStep })
 
+  // Pantalla de bienvenida: solo la PRIMERA vez (nunca arrancó el setup).
+  // Al reabrir el tour, startedAt ya existe → no se muestra de nuevo.
+  const notStarted = !state.startedAt && !isDone && state.currentStep !== "done"
+  const activarPrueba = () => advance({ currentStep: "branding", subStep: 0 })
+
   return (
     <div className="fixed inset-0 z-[200] bg-slate-950 overflow-y-auto">
       {/* Fondo decorativo */}
@@ -104,6 +109,14 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-72 w-[42rem] rounded-full bg-blue-500/20 blur-[140px]" />
       </div>
 
+      {notStarted ? (
+        <WelcomeGate
+          brokerNombre={typeof window !== "undefined" ? (() => { try { return JSON.parse(localStorage.getItem("aseguradora") || "{}")?.nombre || "" } catch { return "" } })() : ""}
+          onActivar={activarPrueba}
+          onSkip={() => setConfirmSkip(true)}
+        />
+      ) : (
+      <>
       {/* Header */}
       <div className="sticky top-0 z-20 backdrop-blur-xl bg-slate-950/70 border-b border-white/10">
         <div className="max-w-5xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
@@ -188,6 +201,8 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
           />
         )}
       </div>
+      </>
+      )}
 
       {/* Modal de "hacelo después" con friction */}
       {confirmSkip && (
@@ -219,6 +234,58 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
 }
 
 // ── Sub-pantallas ────────────────────────────────────────────────────────────
+
+function WelcomeGate({ brokerNombre, onActivar, onSkip }: { brokerNombre: string; onActivar: () => void; onSkip: () => void }) {
+  const [activando, setActivando] = useState(false)
+  const handle = async () => { setActivando(true); try { await onActivar() } finally { setActivando(false) } }
+  return (
+    <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-lg text-center space-y-7">
+        <div className="inline-flex h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 items-center justify-center shadow-lg shadow-blue-500/30">
+          <Gift className="h-8 w-8 text-white" />
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest">Bienvenido{brokerNombre ? ` a ${brokerNombre}` : ""}</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+            Activá tu prueba gratuita<br />de <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">7 días</span>
+          </h1>
+          <p className="text-sm text-slate-400 max-w-md mx-auto">
+            Accedé a todo SegurOS sin tarjeta. En 5 minutos te dejamos el panel con tu marca, tu primera póliza cargada y un email enviado a un cliente.
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left space-y-2.5">
+          {[
+            "Panel 100% con tu logo, color y nombre",
+            "Pólizas, cobranzas y siniestros ilimitados durante la prueba",
+            "Avisos de vencimiento por email con tu marca",
+          ].map((t) => (
+            <div key={t} className="flex items-center gap-2.5 text-sm text-slate-200">
+              <div className="h-5 w-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                <Check className="h-3 w-3" />
+              </div>
+              {t}
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3">
+          <button onClick={handle} disabled={activando}
+            className="w-full px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-base font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 disabled:opacity-60 transition">
+            {activando ? <><Loader2 className="h-5 w-5 animate-spin" /> Activando...</> : <>Activar prueba gratuita de 7 días <ArrowRight className="h-5 w-5" /></>}
+          </button>
+          <button onClick={onSkip} disabled={activando}
+            className="text-xs text-slate-500 hover:text-slate-300">
+            Prefiero explorar por mi cuenta
+          </button>
+          <p className="text-[11px] text-slate-600 flex items-center justify-center gap-1.5 pt-1">
+            <ShieldCheck className="h-3.5 w-3.5" /> Sin tarjeta · Sin compromiso · Cancelás cuando quieras
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function DoneScreen({ primerPolizaId, primerEmailEnviadoEn, primerPolizaEsPrueba, onClose }:
   { primerPolizaId: string | null; primerEmailEnviadoEn: string | null; primerPolizaEsPrueba: boolean; onClose: () => void }) {

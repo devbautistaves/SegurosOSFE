@@ -98,11 +98,20 @@ export function FaseBranding({ initialSubStep = 0, onSubStepChange, onFaseComple
         medioDePagoCatalogo: draft.medioDePagoCatalogo,
       })
 
-      // Refrescamos localStorage para que el sidebar real se redibuje
+      // Refrescamos localStorage para que el sidebar real y los dropdowns de
+      // pólizas/cobranzas/siniestros (que leen via useCatalogos) se redibujen.
+      // OJO: hay que persistir TAMBIÉN los catálogos, no solo meFields, si no
+      // la personalización de aseguradoras/ramos/medios "no anda" en el panel.
       try {
         const stored = localStorage.getItem("aseguradora")
         const base = stored ? JSON.parse(stored) : {}
-        localStorage.setItem("aseguradora", JSON.stringify({ ...base, ...meFields }))
+        localStorage.setItem("aseguradora", JSON.stringify({
+          ...base,
+          ...meFields,
+          aseguradorasCatalogo: draft.aseguradorasCatalogo,
+          ramosCatalogo: draft.ramosCatalogo,
+          medioDePagoCatalogo: draft.medioDePagoCatalogo,
+        }))
         window.dispatchEvent(new Event("branding-updated"))
       } catch {}
 
