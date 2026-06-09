@@ -278,6 +278,8 @@ export default function CobranzasPage() {
   // Una sola fuente de verdad: el BE. Endpoint GET /cobranzas/elegibles?mes=YYYY-MM
   // devuelve la categorización exacta (prioridad vencida > hoy > proximo, sin
   // solapamiento). El badge y el modal usan estos arrays directamente.
+  // todayDay se sigue usando en los textos del modal ("vto. día X").
+  const todayDay = new Date().getDate()
   const [elegibles, setElegibles] = useState<{
     proximo: CobranzaEfectivo[]
     hoy: CobranzaEfectivo[]
