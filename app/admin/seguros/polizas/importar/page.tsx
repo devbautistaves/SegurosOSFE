@@ -78,7 +78,10 @@ export default function ImportarPolizasPage() {
   const { toast } = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  // 2 pasos visibles: 1=upload, 2=preview/import. El mapeo manual sigue
+  // existiendo como sección colapsable dentro del paso 2 (por si el broker
+  // tiene columnas raras que el auto-mapeo no detectó).
+  const [step, setStep] = useState<1 | 2>(1)
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<PreviewResp | null>(null)
   const [filas, setFilas] = useState<FilaPreview[]>([])
@@ -90,7 +93,7 @@ export default function ImportarPolizasPage() {
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""
 
-  // ── Paso 1: upload ──────────────────────────────────────────────────────
+  // ── Paso 1: upload — el auto-mapeo del BE va directo al preview ────────
   const onPickFile = async (f: File | null) => {
     if (!f) return
     setFile(f)
@@ -108,7 +111,8 @@ export default function ImportarPolizasPage() {
     }
   }
 
-  // ── Paso 2: re-preview con mapeo editado ────────────────────────────────
+  // Re-preview cuando el broker ajusta el mapeo manualmente (botón
+  // "Ajustar mapeo" en la sección colapsable del paso 2).
   const reaplicarMapeo = async () => {
     if (!file) return
     setLoading(true)
@@ -116,7 +120,6 @@ export default function ImportarPolizasPage() {
       const r = await polizasAPI.importPreview(token, file, mapeo)
       setPreview(r)
       setFilas(r.filas)
-      setStep(3)
     } catch (e: any) {
       toast({ title: "Error al aplicar mapeo", description: e.message, variant: "destructive" })
     } finally {
@@ -224,15 +227,14 @@ export default function ImportarPolizasPage() {
             </Button>
           </div>
 
-          {/* Stepper */}
+          {/* Stepper — 2 pasos */}
           <div className="mt-5 flex items-center gap-2 text-sm">
             {[
               { n: 1, t: "Subir archivo" },
-              { n: 2, t: "Mapear columnas" },
-              { n: 3, t: "Revisar e importar" },
+              { n: 2, t: "Revisar e importar" },
             ].map((s, i, arr) => (
               <div key={s.n} className="flex items-center gap-2 flex-1">
-                <div className={`flex items-center justify-center h-7 w-7 rounded-full font-bold text-xs ${step >= (s.n as 1|2|3) ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"}`}>
+                <div className={`flex items-center justify-center h-7 w-7 rounded-full font-bold text-xs ${step >= (s.n as 1|2) ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"}`}>
                   {s.n}
                 </div>
                 <span className={`hidden sm:inline ${step === s.n ? "font-semibold" : "text-muted-foreground"}`}>{s.t}</span>
@@ -284,51 +286,8 @@ export default function ImportarPolizasPage() {
           </Card>
         )}
 
-        {/* ── PASO 2: Mapeo ─────────────────────────────────────────── */}
+        {/* ── PASO 2: Preview + confirmar (mapeo automático) ───────── */}
         {step === 2 && preview && (
-          <Card className="p-6 space-y-4">
-            <div>
-              <h2 className="text-lg font-bold">Revisá el mapeo de columnas</h2>
-              <p className="text-sm text-muted-foreground">
-                Detectamos {preview.headers.length} columnas en tu archivo y mapeamos {Object.values(mapeo).filter(Boolean).length} a campos del CRM.
-                Las que dicen <em>"Ignorar"</em> no se importan.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-auto">
-              {preview.headers.map((h) => (
-                <div key={h} className="flex items-center gap-3 p-3 rounded-lg border bg-white">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Tu columna</p>
-                    <p className="font-semibold truncate">{h}</p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
-                  <select
-                    value={mapeo[h] || ""}
-                    onChange={(e) => setMapeo({ ...mapeo, [h]: e.target.value || null })}
-                    className="flex-1 min-w-0 px-2 py-1.5 rounded border border-slate-300 bg-white text-sm"
-                  >
-                    <option value="">— Ignorar —</option>
-                    {preview.camposDestino.map((c) => (
-                      <option key={c} value={c}>{FIELD_LABELS[c] || c}</option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between pt-2 border-t">
-              <Button variant="outline" onClick={() => setStep(1)} className="gap-2">
-                <ArrowLeft className="h-4 w-4" /> Volver
-              </Button>
-              <Button onClick={reaplicarMapeo} disabled={loading} className="gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                Continuar
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {/* ── PASO 3: Preview + confirmar ───────────────────────────── */}
-        {step === 3 && preview && (
           <>
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -349,6 +308,56 @@ export default function ImportarPolizasPage() {
                 <p className="text-2xl font-bold text-red-700">{filas.filter(f => f.diagnostico.errores.length > 0).length}</p>
               </Card>
             </div>
+
+            {/* Mapeo manual — colapsado por defecto. El auto-mapeo del BE ya
+                hizo su trabajo; esto es solo un escape hatch para columnas raras. */}
+            <Card className="p-0 overflow-hidden">
+              <details className="group">
+                <summary className="cursor-pointer list-none flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Wand2 className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium">Mapeo automático aplicado</span>
+                    <span className="text-muted-foreground">
+                      ({Object.values(mapeo).filter(Boolean).length} de {preview.headers.length} columnas mapeadas)
+                    </span>
+                  </div>
+                  <span className="text-xs text-blue-600 group-open:hidden">Ajustar →</span>
+                  <span className="text-xs text-blue-600 hidden group-open:inline">Cerrar ↑</span>
+                </summary>
+                <div className="border-t p-4 space-y-3 bg-slate-50/40">
+                  <p className="text-xs text-muted-foreground">
+                    Si alguna columna no se mapeó bien, corregila acá y tocá <em>"Aplicar"</em>.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[40vh] overflow-auto">
+                    {preview.headers.map((h) => (
+                      <div key={h} className="flex items-center gap-2 p-2 rounded border bg-white text-sm">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] text-muted-foreground uppercase">Tu columna</p>
+                          <p className="font-medium truncate">{h}</p>
+                        </div>
+                        <ArrowRight className="h-3 w-3 text-slate-400 shrink-0" />
+                        <select
+                          value={mapeo[h] || ""}
+                          onChange={(e) => setMapeo({ ...mapeo, [h]: e.target.value || null })}
+                          className="flex-1 min-w-0 px-2 py-1 rounded border border-slate-300 bg-white text-xs"
+                        >
+                          <option value="">— Ignorar —</option>
+                          {preview.camposDestino.map((c) => (
+                            <option key={c} value={c}>{FIELD_LABELS[c] || c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={reaplicarMapeo} disabled={loading} size="sm" className="gap-2">
+                      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                      Aplicar mapeo
+                    </Button>
+                  </div>
+                </div>
+              </details>
+            </Card>
 
             <Card className="p-4">
               <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
@@ -451,8 +460,8 @@ export default function ImportarPolizasPage() {
             </Card>
 
             <div className="flex justify-between items-center gap-3 flex-wrap">
-              <Button variant="outline" onClick={() => setStep(2)} className="gap-2">
-                <ArrowLeft className="h-4 w-4" /> Cambiar mapeo
+              <Button variant="outline" onClick={() => setStep(1)} className="gap-2">
+                <ArrowLeft className="h-4 w-4" /> Cambiar archivo
               </Button>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
