@@ -80,9 +80,32 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
   const goNextFase = (faseDestino: OnboardingStep, subStep = 0) => advance({ currentStep: faseDestino, subStep })
 
   return (
-    <div className="fixed inset-0 z-[200] bg-gradient-to-br from-slate-950 via-blue-950/30 to-slate-950 overflow-y-auto">
+    <div className="fixed inset-0 z-[200] bg-slate-950 overflow-y-auto">
+      {/* Fondo decorativo */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        {/* Base gradiente */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+        {/* Grilla sutil */}
+        <div
+          className="absolute inset-0 opacity-[0.18]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(148,163,184,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.12) 1px, transparent 1px)",
+            backgroundSize: "44px 44px",
+            maskImage: "radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%)",
+            WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%)",
+          }}
+        />
+        {/* Blobs de color */}
+        <div className="absolute -top-40 -left-32 h-[34rem] w-[34rem] rounded-full bg-blue-600/25 blur-[120px]" />
+        <div className="absolute top-1/3 -right-32 h-[30rem] w-[30rem] rounded-full bg-purple-600/20 blur-[120px]" />
+        <div className="absolute -bottom-40 left-1/4 h-[28rem] w-[28rem] rounded-full bg-emerald-500/15 blur-[120px]" />
+        {/* Glow superior central */}
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-72 w-[42rem] rounded-full bg-blue-500/20 blur-[140px]" />
+      </div>
+
       {/* Header */}
-      <div className="sticky top-0 z-10 backdrop-blur bg-slate-950/80 border-b border-white/10">
+      <div className="sticky top-0 z-20 backdrop-blur-xl bg-slate-950/70 border-b border-white/10">
         <div className="max-w-5xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-blue-400" />
@@ -124,7 +147,7 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
       </div>
 
       {/* Body */}
-      <div className="max-w-5xl mx-auto px-4 lg:px-8 py-8">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 lg:px-8 py-8">
         {state.currentStep === "branding" && (
           <FaseBranding
             initialSubStep={state.subStep || 0}
