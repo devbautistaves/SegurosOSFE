@@ -81,6 +81,8 @@ export const saAseguradoras = {
   impersonate: (id: string) =>
     call<{ success: boolean; token: string; user: any; aseguradora: any }>(`/aseguradoras/${id}/impersonate`, { method: "POST" }),
   create: (body: any) => call<{ success: boolean; aseguradora: any; adminUser: any }>(`/aseguradoras`, { method: "POST", body: JSON.stringify(body) }),
+  remove: (id: string) =>
+    call<{ success: boolean; deleted: Record<string, any> }>(`/aseguradoras/${id}`, { method: "DELETE" }),
   resetUserPassword: (id: string, userId: string) =>
     call<{ success: boolean; tempPassword: string }>(`/aseguradoras/${id}/reset-user-password`, { method: "POST", body: JSON.stringify({ userId }) }),
 }

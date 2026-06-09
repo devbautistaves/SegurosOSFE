@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowLeft, Building2, Users, FileText, AlertTriangle, DollarSign,
-  UserCheck, Pause, Play, RotateCcw, KeyRound, Loader2, X, Copy, Check,
+  UserCheck, Pause, Play, RotateCcw, KeyRound, Loader2, X, Copy, Check, Trash2,
 } from "lucide-react"
 import { saAseguradoras } from "@/lib/superadmin-api"
 
@@ -59,6 +59,24 @@ export default function AseguradoraDetailPage() {
     } catch (e: any) { alert(e.message) } finally { setBusy(false) }
   }
 
+  const eliminar = async () => {
+    const a = data.aseguradora
+    const ok = confirm(`¿Eliminar "${a.nombre}" y TODOS sus datos (pólizas, cobranzas, siniestros, pagos y usuarios)?\n\nEsta acción es irreversible.`)
+    if (!ok) return
+    const conf = prompt(`Para confirmar, escribí el nombre del broker:\n${a.nombre}`)
+    if (conf == null) return
+    if (conf.trim().toLowerCase() !== String(a.nombre).trim().toLowerCase()) {
+      alert("El nombre no coincide. No se eliminó nada.")
+      return
+    }
+    setBusy(true)
+    try {
+      await saAseguradoras.remove(id)
+      alert(`"${a.nombre}" eliminada.`)
+      router.push("/superadmin/aseguradoras")
+    } catch (e: any) { alert(e.message) } finally { setBusy(false) }
+  }
+
   if (loading) return <div className="p-12 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-slate-500" /></div>
   if (error) return <div className="p-8 text-red-400 text-sm">{error}</div>
   if (!data) return null
@@ -88,6 +106,10 @@ export default function AseguradoraDetailPage() {
                 : "bg-emerald-500/20 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/30"
             }`}>
             {a.activo ? <><Pause className="h-3.5 w-3.5" /> Suspender</> : <><Play className="h-3.5 w-3.5" /> Reactivar</>}
+          </button>
+          <button onClick={eliminar} disabled={busy}
+            className="px-3 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50">
+            <Trash2 className="h-3.5 w-3.5" /> Eliminar
           </button>
         </div>
       </div>
