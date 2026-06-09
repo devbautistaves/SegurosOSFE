@@ -79,6 +79,21 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
   const isDone = state.currentStep === "done" || !!state.completedAt
   const goNextFase = (faseDestino: OnboardingStep, subStep = 0) => advance({ currentStep: faseDestino, subStep })
 
+  // ── Defensa contra subStep fuera de rango ────────────────────────────────
+  // El subStep se persiste en BE y es compartido entre fases. Si por algún
+  // motivo (bug histórico, race condition, retoma vieja) el subStep guardado
+  // supera el largo del array SUB_STEPS de la fase actual, el render explota
+  // con `Cannot read properties of undefined (reading 'key')` y bloquea
+  // todo /admin. Capamos por fase aquí + clamp adicional dentro de cada
+  // componente como cinturón y tiradores.
+  const SUB_STEP_MAX: Record<string, number> = {
+    branding: 6,   // 7 sub-steps (logo..mediosPago)
+    poliza:   3,   // 4 sub-steps (asegurado..cobranza)
+    cobranza: 0,   // pantalla única
+    done:     0,
+  }
+  const safeSubStep = Math.max(0, Math.min(state.subStep || 0, SUB_STEP_MAX[state.currentStep] ?? 0))
+
   // Pantalla de bienvenida: solo la PRIMERA vez (nunca arrancó el setup).
   // Al reabrir el tour, startedAt ya existe → no se muestra de nuevo.
   const notStarted = !state.startedAt && !isDone && state.currentStep !== "done"
@@ -163,14 +178,14 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
       <div className="relative z-10 max-w-5xl mx-auto px-4 lg:px-8 py-8">
         {state.currentStep === "branding" && (
           <FaseBranding
-            initialSubStep={state.subStep || 0}
+            initialSubStep={safeSubStep}
             onSubStepChange={(subStep) => advance({ subStep })}
             onFaseCompleted={() => goNextFase("poliza", 0)}
           />
         )}
         {state.currentStep === "poliza" && (
           <FasePrimerPoliza
-            initialSubStep={state.subStep || 0}
+            initialSubStep={safeSubStep}
             onSubStepChange={(subStep) => advance({ subStep })}
             onPolizaCreada={(polizaId, esPrueba) => {
               advance({

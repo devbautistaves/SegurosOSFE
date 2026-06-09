@@ -48,7 +48,10 @@ export function FaseBranding({ initialSubStep = 0, onSubStepChange, onFaseComple
     logo: "", nombre: "", colorPrimario: "#0f172a", whatsapp: "",
     aseguradorasCatalogo: [], ramosCatalogo: [], medioDePagoCatalogo: [],
   })
-  const [subStep, setSubStep] = useState(initialSubStep)
+  // Clampeamos initialSubStep al rango válido — si el wizard padre pasa un
+  // índice fuera de rango, `SUB_STEPS[subStep]` da undefined y el render
+  // crashea con `undefined (reading 'key')` rompiendo /admin entero.
+  const [subStep, setSubStep] = useState(Math.max(0, Math.min(initialSubStep, SUB_STEPS.length - 1)))
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState("")

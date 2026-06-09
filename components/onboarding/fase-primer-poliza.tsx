@@ -69,7 +69,13 @@ const INITIAL: DraftPoliza = {
 
 export function FasePrimerPoliza({ initialSubStep = 0, onSubStepChange, onPolizaCreada, onPrevFase }: Props) {
   const [draft, setDraft] = useState<DraftPoliza>(INITIAL)
-  const [subStep, setSubStep] = useState(initialSubStep)
+  // Clampeamos el initialSubStep al rango válido [0, SUB_STEPS.length-1].
+  // El wizard padre persiste el subStep en BE compartido entre fases — si
+  // el broker venía de Fase 1 (que tiene 7 sub-steps), llega acá con un
+  // valor que no existe en este array y `SUB_STEPS[subStep]` da undefined
+  // → crash en `current.key`. Esto bloqueaba todo el panel /admin.
+  const safeInitial = Math.max(0, Math.min(initialSubStep, SUB_STEPS.length - 1))
+  const [subStep, setSubStep] = useState(safeInitial)
   const [aseguradoras, setAseguradoras] = useState<string[]>([])
   const [ramos, setRamos] = useState<string[]>([])
   const [userEmail, setUserEmail] = useState("")
