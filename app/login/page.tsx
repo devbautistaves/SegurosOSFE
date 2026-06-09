@@ -5,13 +5,14 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { authAPI } from "@/lib/api"
-import { Shield, Loader2, ArrowRight, Check } from "lucide-react"
+import { Shield, Loader2, ArrowRight, Mail, Lock, Eye, EyeOff, Sparkles } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -27,67 +28,33 @@ export default function LoginPage() {
       if (r.aseguradora) localStorage.setItem("aseguradora", JSON.stringify(r.aseguradora))
       localStorage.setItem("selectedCompanyId", "seguros")
       toast({ title: "Bienvenido", description: `Hola ${r.user.name}!` })
-      const role = r.user.role
+      const role = String(r.user.role)
       router.replace(role === "admin" || role === "admin_seguros" ? "/admin" : "/seller")
     } catch (e: any) {
       setErr(e?.message || "Credenciales incorrectas")
     } finally { setLoading(false) }
   }
 
-  const beneficios = [
-    "Pólizas, cobranzas y siniestros ilimitados (plan PRO)",
-    "Multi-usuario con roles y permisos",
-    "Notificaciones automáticas de vencimientos",
-    "Catálogos de aseguradoras y ramos personalizables",
-    "Dashboard con métricas en tiempo real",
-  ]
-
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-slate-950 p-12 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 25% 25%, #3b82f6 0%, transparent 40%)" }} />
-        <div className="relative flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
-            <Shield className="h-5 w-5 text-white" />
+    <AuthShell>
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex items-center justify-center gap-2.5 mb-8">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
+            <Shield className="h-6 w-6 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight">SegurOS</span>
+          <span className="text-2xl font-bold tracking-tight text-white">SegurOS</span>
         </div>
-        <div className="relative space-y-6">
-          <h1 className="text-4xl font-bold leading-tight">
-            El CRM para brokers<br />de seguros que crecen.
-          </h1>
-          <p className="text-lg text-white/70 max-w-md">
-            Entrá a tu cuenta y seguí gestionando tu cartera donde la dejaste.
-          </p>
-          <ul className="space-y-2.5">
-            {beneficios.map(b => (
-              <li key={b} className="flex items-start gap-2.5 text-sm text-white/80">
-                <Check className="h-5 w-5 flex-shrink-0 text-blue-400 mt-0.5" />
-                {b}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="relative text-sm text-white/40">© {new Date().getFullYear()} SegurOS — by TusVentas.</p>
-      </div>
 
-      <div className="flex w-full lg:w-1/2 items-center justify-center p-6 bg-background">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center gap-2.5 mb-8 justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
-              <Shield className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">SegurOS</span>
-          </div>
+        {/* Card */}
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-7 shadow-2xl shadow-black/40">
+          <h2 className="text-2xl font-bold tracking-tight text-white text-center">Iniciá sesión</h2>
+          <p className="text-sm text-slate-400 mb-6 text-center">Ingresá con tu email y contraseña.</p>
 
-          <h2 className="text-2xl font-bold tracking-tight">Iniciá sesión</h2>
-          <p className="text-sm text-muted-foreground mb-6">Ingresá con tu email y contraseña.</p>
-
-          <form onSubmit={submit} className="space-y-3.5">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</label>
+          <form onSubmit={submit} className="space-y-4">
+            <Field icon={<Mail className="h-4 w-4" />} label="Email">
               <input
-                className="mt-1 w-full h-10 rounded-md border bg-background px-3 text-sm"
+                className={inputCls}
                 type="email"
                 placeholder="vos@broker.com"
                 value={email}
@@ -95,40 +62,90 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contraseña</label>
+            <Field icon={<Lock className="h-4 w-4" />} label="Contraseña">
               <input
-                className="mt-1 w-full h-10 rounded-md border bg-background px-3 text-sm"
-                type="password"
+                className={inputCls + " pr-10"}
+                type={showPass ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
               />
-            </div>
+              <button type="button" onClick={() => setShowPass(s => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </Field>
 
-            {err && <p className="text-sm text-red-600">{err}</p>}
+            {err && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{err}</p>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Ingresar <ArrowRight className="h-4 w-4" /></>}
             </button>
-
-            <p className="text-xs text-center text-muted-foreground">
-              ¿No tenés cuenta?{" "}
-              <Link href="/registro" className="text-blue-600 font-medium hover:underline">
-                Creá tu broker gratis
-              </Link>
-            </p>
           </form>
+
+          {/* Separador */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-[11px] uppercase tracking-widest text-slate-500">o</span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+
+          {/* CTA registro destacado */}
+          <Link href="/registro"
+            className="group w-full h-11 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 font-semibold transition-all flex items-center justify-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            Creá gratis tu panel de seguros
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+          <p className="text-[11px] text-center text-slate-500 mt-2">7 días de prueba · sin tarjeta</p>
         </div>
+
+        <p className="text-center text-xs text-slate-600 mt-6">© {new Date().getFullYear()} SegurOS — by TusVentas.</p>
       </div>
+    </AuthShell>
+  )
+}
+
+// ── Shell tecnológico compartido ──────────────────────────────────────────────
+const inputCls = "w-full h-11 rounded-xl border border-white/10 bg-white/[0.03] pl-10 pr-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.05] transition-colors"
+
+function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">{label}</label>
+      <div className="relative mt-1">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{icon}</span>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function AuthShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative min-h-screen flex items-center justify-center p-4 bg-slate-950 overflow-hidden">
+      {/* Fondo decorativo tech */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+        <div className="absolute inset-0 opacity-[0.15]" style={{
+          backgroundImage: "linear-gradient(to right, rgba(148,163,184,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.12) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+          maskImage: "radial-gradient(ellipse 70% 70% at 50% 40%, #000 30%, transparent 100%)",
+          WebkitMaskImage: "radial-gradient(ellipse 70% 70% at 50% 40%, #000 30%, transparent 100%)",
+        }} />
+        <div className="absolute -top-40 -left-32 h-[34rem] w-[34rem] rounded-full bg-blue-600/25 blur-[120px]" />
+        <div className="absolute -bottom-40 -right-32 h-[34rem] w-[34rem] rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[26rem] w-[40rem] rounded-full bg-purple-600/10 blur-[140px]" />
+      </div>
+      <div className="relative z-10 w-full flex justify-center">{children}</div>
     </div>
   )
 }

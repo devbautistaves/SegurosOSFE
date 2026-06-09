@@ -4,35 +4,58 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authAPI, RegisterAseguradoraData } from "@/lib/api"
-import { Shield, Loader2, ArrowRight, Check } from "lucide-react"
+import { AuthShell } from "../login/page"
+import {
+  Shield, Loader2, ArrowRight, ArrowLeft, Check, Building2, User, Mail, Lock,
+  Eye, EyeOff, Sparkles, Phone, Palette, FileText, CreditCard,
+} from "lucide-react"
+
+const PASOS = [
+  { key: "broker",  titulo: "¿Cómo se llama tu broker?", sub: "Lo vas a poder personalizar con tu logo y color después." },
+  { key: "usuario", titulo: "Creá tu usuario admin",      sub: "Con esta cuenta vas a entrar y administrar todo." },
+  { key: "listo",   titulo: "¡Último paso!",              sub: "Aceptá los términos y arrancamos tu setup." },
+] as const
+
+const inputCls = "w-full h-11 rounded-xl border border-white/10 bg-white/[0.03] pl-10 pr-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.05] transition-colors"
 
 export default function RegistroPage() {
   const router = useRouter()
+  const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [showPass, setShowPass] = useState(false)
+  const [aceptaTerminos, setAceptaTerminos] = useState(false)
   const [form, setForm] = useState<RegisterAseguradoraData>({
-    aseguradoraNombre: "",
-    aseguradoraTelefono: "",
-    aseguradoraEmail: "",
-    name: "",
-    email: "",
-    password: "",
+    aseguradoraNombre: "", aseguradoraTelefono: "", aseguradoraEmail: "",
+    name: "", email: "", password: "",
   })
-
   const set = <K extends keyof RegisterAseguradoraData>(k: K, v: RegisterAseguradoraData[K]) =>
     setForm(prev => ({ ...prev, [k]: v }))
 
-  const [aceptaTerminos, setAceptaTerminos] = useState(false)
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErr(null)
-    if (!form.aseguradoraNombre || !form.aseguradoraTelefono || !form.name || !form.email || !form.password) {
-      setErr("Faltan campos obligatorios"); return
+  const validar = (s: number): string | null => {
+    if (s === 0) {
+      if (!form.aseguradoraNombre.trim()) return "Indicá el nombre de tu broker"
+      if (!form.aseguradoraTelefono.trim()) return "Indicá un teléfono de contacto"
     }
-    if (form.password.length < 6) { setErr("La contraseña debe tener al menos 6 caracteres"); return }
-    if (!aceptaTerminos) { setErr("Tenés que aceptar los Términos y Condiciones para crear la cuenta"); return }
-    setLoading(true)
+    if (s === 1) {
+      if (!form.name.trim()) return "Tu nombre es obligatorio"
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return "Email inválido"
+      if (form.password.length < 6) return "La contraseña debe tener al menos 6 caracteres"
+    }
+    return null
+  }
+
+  const next = () => {
+    const v = validar(step)
+    if (v) { setErr(v); return }
+    setErr(null)
+    setStep(s => Math.min(s + 1, PASOS.length - 1))
+  }
+  const back = () => { setErr(null); setStep(s => Math.max(0, s - 1)) }
+
+  const submit = async () => {
+    if (!aceptaTerminos) { setErr("Tenés que aceptar los Términos y Condiciones"); return }
+    setErr(null); setLoading(true)
     try {
       const r = await authAPI.registerAseguradora({
         ...form,
@@ -48,102 +71,163 @@ export default function RegistroPage() {
     } finally { setLoading(false) }
   }
 
-  const beneficios = [
-    "Pólizas, cobranzas y siniestros ilimitados (plan PRO)",
-    "Multi-usuario con roles y permisos",
-    "Notificaciones automáticas de vencimientos",
-    "Catálogos de aseguradoras y ramos personalizables",
-    "Dashboard con métricas en tiempo real",
-  ]
+  const current = PASOS[step]
 
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-slate-950 p-12 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 25% 25%, #3b82f6 0%, transparent 40%)" }} />
-        <div className="relative flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
-            <Shield className="h-5 w-5 text-white" />
+    <AuthShell>
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex items-center justify-center gap-2.5 mb-6">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
+            <Shield className="h-6 w-6 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight">SegurOS</span>
+          <span className="text-2xl font-bold tracking-tight text-white">SegurOS</span>
         </div>
-        <div className="relative space-y-6">
-          <h1 className="text-4xl font-bold leading-tight">
-            El CRM para brokers<br />de seguros que crecen.
-          </h1>
-          <p className="text-lg text-white/70 max-w-md">
-            Empezá gratis en 1 minuto. Sin tarjeta. Tu cartera, tus catálogos, tus reglas.
-          </p>
-          <ul className="space-y-2.5">
-            {beneficios.map(b => (
-              <li key={b} className="flex items-start gap-2.5 text-sm text-white/80">
-                <Check className="h-5 w-5 flex-shrink-0 text-blue-400 mt-0.5" />
-                {b}
-              </li>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-7 shadow-2xl shadow-black/40">
+          {/* Progreso */}
+          <div className="flex items-center gap-2 mb-5">
+            {PASOS.map((p, i) => (
+              <div key={p.key} className="flex-1 flex items-center gap-2">
+                <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-shrink-0 ${
+                  i < step ? "bg-emerald-500 text-white" :
+                  i === step ? "bg-blue-500 text-white ring-4 ring-blue-500/25" :
+                  "bg-white/5 text-slate-500 border border-white/10"
+                }`}>
+                  {i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                </div>
+                {i < PASOS.length - 1 && <div className={`flex-1 h-px ${i < step ? "bg-emerald-500/50" : "bg-white/10"}`} />}
+              </div>
             ))}
-          </ul>
-        </div>
-        <p className="relative text-sm text-white/40">© {new Date().getFullYear()} SegurOS — by TusVentas.</p>
-      </div>
-
-      <div className="flex w-full lg:w-1/2 items-center justify-center p-6 bg-background">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center gap-2.5 mb-8 justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
-              <Shield className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">SegurOS</span>
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight">Creá tu cuenta gratis</h2>
-          <p className="text-sm text-muted-foreground mb-6">Tardás menos de 1 minuto. Incluye prueba gratuita.</p>
+          <p className="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Paso {step + 1} de {PASOS.length}</p>
+          <h2 className="text-xl font-bold tracking-tight text-white mt-0.5">{current.titulo}</h2>
+          <p className="text-sm text-slate-400 mb-5">{current.sub}</p>
 
-          <form onSubmit={submit} className="space-y-3.5">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tu broker / agencia</label>
-              <div className="space-y-2 mt-1">
-                <input className="w-full h-10 rounded-md border bg-background px-3 text-sm" placeholder="Nombre del broker (ej: Pérez Seguros)" value={form.aseguradoraNombre} onChange={e => set("aseguradoraNombre", e.target.value)} required />
-                <input className="w-full h-10 rounded-md border bg-background px-3 text-sm" type="tel" placeholder="Teléfono del broker" value={form.aseguradoraTelefono} onChange={e => set("aseguradoraTelefono", e.target.value)} required />
-              </div>
+          {/* Paso 0 — broker */}
+          {step === 0 && (
+            <div className="space-y-3">
+              <Field icon={<Building2 className="h-4 w-4" />} label="Nombre del broker / agencia">
+                <input className={inputCls} placeholder="Ej: Pérez Seguros" value={form.aseguradoraNombre}
+                  onChange={e => set("aseguradoraNombre", e.target.value)} autoFocus
+                  onKeyDown={e => e.key === "Enter" && next()} />
+              </Field>
+              <Field icon={<Phone className="h-4 w-4" />} label="Teléfono de contacto">
+                <input className={inputCls} type="tel" placeholder="Ej: 11 5888 3022" value={form.aseguradoraTelefono}
+                  onChange={e => set("aseguradoraTelefono", e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && next()} />
+              </Field>
             </div>
+          )}
 
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tu usuario admin</label>
-              <div className="space-y-2 mt-1">
-                <input className="w-full h-10 rounded-md border bg-background px-3 text-sm" placeholder="Tu nombre" value={form.name} onChange={e => set("name", e.target.value)} required autoComplete="name" />
-                <input className="w-full h-10 rounded-md border bg-background px-3 text-sm" type="email" placeholder="Tu email" value={form.email} onChange={e => set("email", e.target.value)} required autoComplete="email" />
-                <input className="w-full h-10 rounded-md border bg-background px-3 text-sm" type="password" placeholder="Contraseña (mín 6 caracteres)" value={form.password} onChange={e => set("password", e.target.value)} required minLength={6} autoComplete="new-password" />
-              </div>
+          {/* Paso 1 — usuario */}
+          {step === 1 && (
+            <div className="space-y-3">
+              <Field icon={<User className="h-4 w-4" />} label="Tu nombre">
+                <input className={inputCls} placeholder="Juan Pérez" value={form.name}
+                  onChange={e => set("name", e.target.value)} autoFocus autoComplete="name"
+                  onKeyDown={e => e.key === "Enter" && next()} />
+              </Field>
+              <Field icon={<Mail className="h-4 w-4" />} label="Tu email">
+                <input className={inputCls} type="email" placeholder="vos@broker.com" value={form.email}
+                  onChange={e => set("email", e.target.value)} autoComplete="email"
+                  onKeyDown={e => e.key === "Enter" && next()} />
+              </Field>
+              <Field icon={<Lock className="h-4 w-4" />} label="Contraseña">
+                <input className={inputCls + " pr-10"} type={showPass ? "text" : "password"} placeholder="Mín. 6 caracteres"
+                  value={form.password} onChange={e => set("password", e.target.value)} autoComplete="new-password"
+                  onKeyDown={e => e.key === "Enter" && next()} />
+                <button type="button" onClick={() => setShowPass(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </Field>
             </div>
+          )}
 
-            <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={aceptaTerminos}
-                onChange={e => setAceptaTerminos(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-              />
-              <span>
-                Acepto los{" "}
-                <Link href="/terminos" target="_blank" className="text-blue-600 font-medium hover:underline">
-                  Términos y Condiciones
-                </Link>{" "}
-                y la Política de Privacidad (Ley 25.326). Entiendo que mis datos quedan aislados de otros brokers
-                y que puedo descargarlos o solicitar la baja desde el panel en cualquier momento.
-              </span>
-            </label>
+          {/* Paso 2 — confirmar */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-1.5 text-sm">
+                <ResumenRow label="Broker" value={form.aseguradoraNombre} />
+                <ResumenRow label="Admin" value={form.name} />
+                <ResumenRow label="Email" value={form.email} />
+              </div>
 
-            {err && <p className="text-sm text-red-600">{err}</p>}
+              <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3">
+                <p className="text-xs font-semibold text-blue-200 mb-2">Apenas entres, tu setup guiado te deja listo en 5 min:</p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  {[{ i: Palette, t: "Tu marca" }, { i: FileText, t: "Tu 1ª póliza" }, { i: CreditCard, t: "Tu 1er email" }].map(({ i: Icon, t }) => (
+                    <div key={t} className="rounded-lg bg-white/[0.03] py-2">
+                      <Icon className="h-4 w-4 mx-auto text-blue-300" />
+                      <p className="text-[10px] text-slate-300 mt-1">{t}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            <button type="submit" disabled={loading || !aceptaTerminos} className="w-full h-11 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Crear cuenta gratis <ArrowRight className="h-4 w-4" /></>}
-            </button>
+              <label className="flex items-start gap-2 text-xs text-slate-400 cursor-pointer select-none">
+                <input type="checkbox" checked={aceptaTerminos} onChange={e => setAceptaTerminos(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded accent-blue-500 cursor-pointer" />
+                <span>
+                  Acepto los <Link href="/terminos" target="_blank" className="text-blue-400 font-medium hover:underline">Términos y Condiciones</Link> y la Política de Privacidad (Ley 25.326). Mis datos quedan aislados de otros brokers y puedo darme de baja cuando quiera.
+                </span>
+              </label>
+            </div>
+          )}
 
-            <p className="text-xs text-center text-muted-foreground">
-              ¿Ya tenés cuenta? <Link href="/login" className="text-blue-600 font-medium hover:underline">Iniciar sesión</Link>
-            </p>
-          </form>
+          {err && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 mt-4">{err}</p>}
+
+          {/* Navegación */}
+          <div className="flex gap-2 mt-5">
+            {step > 0 && (
+              <button onClick={back} disabled={loading}
+                className="px-4 h-11 rounded-xl border border-white/10 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-30 flex items-center gap-1.5">
+                <ArrowLeft className="h-4 w-4" /> Atrás
+              </button>
+            )}
+            {step < PASOS.length - 1 ? (
+              <button onClick={next}
+                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25">
+                Siguiente <ArrowRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <button onClick={submit} disabled={loading || !aceptaTerminos}
+                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="h-4 w-4" /> Crear mi panel gratis</>}
+              </button>
+            )}
+          </div>
+
+          <p className="text-[11px] text-center text-slate-500 mt-4">
+            ¿Ya tenés cuenta? <Link href="/login" className="text-blue-400 font-medium hover:underline">Iniciar sesión</Link>
+          </p>
         </div>
+
+        <p className="text-center text-xs text-slate-600 mt-6">7 días de prueba gratis · sin tarjeta · © {new Date().getFullYear()} SegurOS</p>
       </div>
+    </AuthShell>
+  )
+}
+
+function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">{label}</label>
+      <div className="relative mt-1">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{icon}</span>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function ResumenRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-slate-500">{label}</span>
+      <span className="text-white font-medium truncate">{value || "—"}</span>
     </div>
   )
 }
