@@ -91,7 +91,14 @@ export default function SuscripcionPage() {
     )
   }
 
-  const esPRO = estado.plan === "PRO" && estado.planStatus === "ACTIVO"
+  const enTrial = !!(estado.trial && !estado.trial.vencido && estado.planCodigo === "TRIAL")
+  const diasTrial = estado.trial?.diasRestantes ?? null
+  const tienePlanPago = ["PROMO", "PRO_MENSUAL", "PRO_ANUAL"].includes(estado.planCodigo ?? "")
+  const esPRO = tienePlanPago || (estado.plan === "PRO" && estado.planStatus === "ACTIVO")
+  // Mostramos los planes para contratar si NO tiene un plan pago real
+  // (incluye trial y vencido: queremos que enganchen la PROMO antes de que se
+  // les corte la prueba).
+  const mostrarPlanes = !tienePlanPago
   const usoBarras = [
     { label: "Pólizas",    actual: estado.uso.polizas,    limit: estado.limites.polizas },
     { label: "Cobranzas",  actual: estado.uso.cobranzas,  limit: estado.limites.cobranzas },
@@ -111,13 +118,35 @@ export default function SuscripcionPage() {
 
       {err && <div className="rounded-lg border border-red-300 bg-red-50 text-red-700 p-3 text-sm flex items-start gap-2"><AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />{err}</div>}
 
+      {/* Banner de prueba gratuita activa */}
+      {enTrial && (
+        <div className="rounded-xl border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50 p-5 flex items-start gap-3">
+          <div className="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0">
+            <Crown className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-blue-900">Prueba PRO activa · acceso completo</p>
+            <p className="text-sm text-blue-800/80 mt-0.5">
+              {diasTrial != null
+                ? <>Te quedan <b>{diasTrial} {diasTrial === 1 ? "día" : "días"}</b> de prueba gratuita.</>
+                : <>Tu prueba gratuita está activa.</>}
+              {estado.trial?.finaliza && <> Finaliza el {new Date(estado.trial.finaliza).toLocaleDateString("es-AR")}.</>}
+            </p>
+            <p className="text-xs text-blue-700/70 mt-1">Enganchá la PROMO de lanzamiento abajo para no perder el acceso cuando termine la prueba.</p>
+          </div>
+        </div>
+      )}
+
       {/* Plan actual */}
-      <div className={`rounded-xl p-6 border-2 ${esPRO ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-slate-50"}`}>
+      <div className={`rounded-xl p-6 border-2 ${esPRO ? "border-amber-300 bg-amber-50" : enTrial ? "border-blue-200 bg-blue-50/40" : "border-slate-200 bg-slate-50"}`}>
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">Plan actual</p>
-            <p className="text-3xl font-bold">{esPRO ? "PRO" : "FREE"}</p>
-            {estado.planVencimiento && (
+            <p className="text-3xl font-bold">{esPRO ? "PRO" : enTrial ? "Prueba PRO" : "FREE"}</p>
+            {enTrial && diasTrial != null && (
+              <p className="text-sm text-blue-700 font-medium mt-1">{diasTrial} {diasTrial === 1 ? "día restante" : "días restantes"}</p>
+            )}
+            {!enTrial && estado.planVencimiento && (
               <p className="text-sm text-muted-foreground mt-1">
                 {esPRO ? "Vence" : "Venció"}: {new Date(estado.planVencimiento).toLocaleDateString("es-AR")}
               </p>
@@ -152,7 +181,44 @@ export default function SuscripcionPage() {
       </div>
 
       {/* Planes disponibles */}
-      {!esPRO && (
+      {mostrarPlanes && (
+        <>
+        {/* PROMO de lanzamiento destacada */}
+        {estado.precios.PROMO && (
+          <div className="rounded-xl border-2 border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 p-6 relative">
+            <div className="absolute -top-3 left-6 bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+              🔥 Promo de lanzamiento
+            </div>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide font-semibold text-emerald-700">{estado.precios.PROMO.descripcion}</p>
+                <div className="flex items-end gap-2 mt-2">
+                  <p className="text-4xl font-bold text-emerald-900">{fmtMoney(estado.precios.PROMO.monto)}</p>
+                  <p className="text-sm text-emerald-700 mb-1">/ mes · primeros 3 meses</p>
+                </div>
+                {estado.precios.PROMO.montoFinal && (
+                  <p className="text-sm text-emerald-700/80 mt-1">
+                    Después pasás a PRO Mensual ({fmtMoney(estado.precios.PROMO.montoFinal)}/mes). Cancelás cuando quieras.
+                  </p>
+                )}
+                <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-4 text-sm text-emerald-900">
+                  <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> Todo PRO, ilimitado</li>
+                  <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> Logo y marca propia</li>
+                  <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> Emails automáticos a clientes</li>
+                  <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> Soporte prioritario</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => checkout("PROMO")}
+                disabled={checkoutLoading !== null}
+                className="md:w-56 h-12 rounded-md font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white flex-shrink-0"
+              >
+                {checkoutLoading === "PROMO" ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Aprovechar la promo <ExternalLink className="h-4 w-4" /></>}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 gap-4">
           {[
             { plan: "PRO_MENSUAL" as const, ...estado.precios.PRO_MENSUAL, periodo: "mes", recomendado: false, extra: "" as string },
@@ -189,6 +255,7 @@ export default function SuscripcionPage() {
             </div>
           ))}
         </div>
+        </>
       )}
 
       <p className="text-xs text-center text-muted-foreground pt-4">

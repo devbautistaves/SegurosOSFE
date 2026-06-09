@@ -887,6 +887,7 @@ export interface SuscripcionEstado {
     vencido: boolean
   } | null
   precios: {
+    PROMO?:      { id: string; monto: number; montoFinal?: number; descripcion: string }
     PRO_MENSUAL: { id: string; monto: number; descripcion: string }
     PRO_ANUAL:   { id: string; monto: number; descripcion: string }
   }
