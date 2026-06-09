@@ -166,21 +166,33 @@ export default function ImportarPolizasPage() {
     }
   }
 
+  // Generamos la plantilla 100% en el cliente para evitar problemas con el
+  // proxy de Next.js (que corrompe binarios). CSV se abre nativo en Excel
+  // y Google Sheets, no requiere lib y no necesita auth.
   const descargarPlantilla = () => {
-    const url = polizasAPI.importPlantillaUrl()
-    // Fuerza descarga con el token en query? Mejor: <a download>
-    // El endpoint requiere auth → abrir en una pestaña con localStorage no funciona.
-    // Workaround: fetch + blob.
-    fetch(url, { headers: { Authorization: `Bearer ${token}` }, credentials: "include" })
-      .then(r => r.blob())
-      .then(blob => {
-        const a = document.createElement("a")
-        a.href = URL.createObjectURL(blob)
-        a.download = "plantilla_polizas.xlsx"
-        a.click()
-        URL.revokeObjectURL(a.href)
-      })
-      .catch(() => toast({ title: "Error", description: "No se pudo descargar la plantilla", variant: "destructive" }))
+    const headers = [
+      "Nro Poliza","Aseguradora","Ramo","Tipo Cobertura","Fecha Inicio Vig","Fecha Fin Vig",
+      "Medio de Pago","Estado","Nombre y Apellido","DNI","Fecha Nacimiento","Celular","Email",
+      "Domicilio","Localidad","CP","Patente","Chasis","Motor","GNC","Datos de Riesgo",
+    ]
+    const ejemplo = [
+      "P-12345","SANCOR","AUTOS","TODO RIESGO","01/01/2026","01/01/2027",
+      "EFECTIVO","VIGENTE","Juan Perez","20111222","15/03/1985","1144556677","juan@example.com",
+      "Av. Siempreviva 742","CABA","1414","AB123CD","9BWAA05U58P012345","ABC123456","NO","Toyota Corolla 2022",
+    ]
+    const escapar = (c: string) => `"${String(c).replace(/"/g, '""')}"`
+    // ﻿ BOM al inicio: Excel lo necesita para detectar UTF-8 y mostrar
+    // tildes/eñes bien. Usamos ; (no ,) porque en Excel ES es el separador
+    // por defecto y abre en columnas sin importar manualmente.
+    const csv = "﻿" + [headers, ejemplo].map(r => r.map(escapar).join(";")).join("\r\n")
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(blob)
+    a.download = "plantilla_polizas.csv"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(a.href)
   }
 
   const filasFiltradas = filas.filter(f => {
@@ -208,7 +220,7 @@ export default function ImportarPolizasPage() {
               <p className="text-muted-foreground text-sm">Subí un Excel/CSV. Nosotros auto-mapeamos las columnas y validamos las filas.</p>
             </div>
             <Button variant="outline" onClick={descargarPlantilla} className="gap-2">
-              <Download className="h-4 w-4" /> Plantilla .xlsx
+              <Download className="h-4 w-4" /> Plantilla .csv
             </Button>
           </div>
 
