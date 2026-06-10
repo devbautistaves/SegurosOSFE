@@ -85,6 +85,22 @@ export const saAseguradoras = {
     call<{ success: boolean; deleted: Record<string, any> }>(`/aseguradoras/${id}`, { method: "DELETE" }),
   resetUserPassword: (id: string, userId: string) =>
     call<{ success: boolean; tempPassword: string }>(`/aseguradoras/${id}/reset-user-password`, { method: "POST", body: JSON.stringify({ userId }) }),
+
+  // Multi-delete con 2FA por email.
+  requestDeleteBatchOtp: (aseguradoraIds: string[]) =>
+    call<{ success: boolean; email: string; cantidad: number; sentTo: string }>(
+      `/aseguradoras/delete-batch/request-otp`,
+      { method: "POST", body: JSON.stringify({ aseguradoraIds }) }
+    ),
+  confirmDeleteBatch: (aseguradoraIds: string[], code: string) =>
+    call<{
+      success: boolean
+      eliminados: number
+      fallidos: number
+      detalles: Array<{ aseguradoraId: string; nombre?: string; ok: boolean; error?: string; borrados?: any }>
+    }>(`/aseguradoras/delete-batch/confirm`, {
+      method: "POST", body: JSON.stringify({ aseguradoraIds, code }),
+    }),
 }
 
 // Pagos

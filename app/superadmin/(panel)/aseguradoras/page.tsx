@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { saAseguradoras } from "@/lib/superadmin-api"
-import { Building2, Search, Plus, Loader2, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { Building2, Search, Plus, Loader2, ChevronLeft, ChevronRight, X, CheckSquare, Square, Trash2 } from "lucide-react"
+import { DeleteBatchModal } from "./delete-batch-modal"
 
 export default function AseguradorasPage() {
   const params = useSearchParams()
@@ -16,6 +17,9 @@ export default function AseguradorasPage() {
   const [activo, setActivo] = useState<string>(params.get("activo") || "")
   const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
+  // Multi-select para borrado masivo con 2FA
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [batchOpen, setBatchOpen] = useState(false)
 
   const fetch = async () => {
     setLoading(true)
@@ -43,9 +47,30 @@ export default function AseguradorasPage() {
           <h1 className="text-2xl font-bold text-white">Aseguradoras</h1>
           <p className="text-sm text-slate-400 mt-0.5">{data.total} brokers registrados en el SaaS</p>
         </div>
-        <button onClick={() => setCreateOpen(true)} className="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-semibold flex items-center gap-1.5 hover:opacity-90">
-          <Plus className="h-4 w-4" /> Crear manual
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <>
+              <span className="text-xs text-slate-400">
+                <strong className="text-white">{selectedIds.size}</strong> seleccionada{selectedIds.size === 1 ? "" : "s"}
+              </span>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="text-xs text-slate-500 hover:text-slate-300 px-2 py-1.5 rounded border border-white/10 hover:bg-white/5"
+              >
+                Limpiar
+              </button>
+              <button
+                onClick={() => setBatchOpen(true)}
+                className="flex items-center gap-1.5 text-xs bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 px-3 py-1.5 rounded font-semibold"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Eliminar
+              </button>
+            </>
+          )}
+          <button onClick={() => setCreateOpen(true)} className="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-semibold flex items-center gap-1.5 hover:opacity-90">
+            <Plus className="h-4 w-4" /> Crear manual
+          </button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -80,6 +105,22 @@ export default function AseguradorasPage() {
             <table className="w-full text-sm">
               <thead className="bg-black/30 border-b border-white/10">
                 <tr className="text-left text-[10px] text-slate-500 uppercase tracking-wider">
+                  <th className="px-3 py-3 w-10">
+                    <button
+                      onClick={() => {
+                        const allIds = data.aseguradoras.map((a: any) => a._id)
+                        const allSelected = allIds.length > 0 && allIds.every((id: string) => selectedIds.has(id))
+                        if (allSelected) setSelectedIds(new Set())
+                        else setSelectedIds(new Set(allIds))
+                      }}
+                      className="text-slate-500 hover:text-white"
+                      aria-label="Seleccionar todos"
+                    >
+                      {data.aseguradoras.length > 0 && data.aseguradoras.every((a: any) => selectedIds.has(a._id))
+                        ? <CheckSquare className="w-4 h-4 text-blue-400" />
+                        : <Square className="w-4 h-4" />}
+                    </button>
+                  </th>
                   <th className="px-4 py-3">Nombre</th>
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3">Estado</th>
@@ -91,7 +132,26 @@ export default function AseguradorasPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {data.aseguradoras.map((a: any) => (
-                  <tr key={a._id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={a._id} className={`hover:bg-white/[0.02] transition-colors ${selectedIds.has(a._id) ? "bg-blue-500/5" : ""}`}>
+                    <td className="px-3 py-3 w-10">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedIds(prev => {
+                            const next = new Set(prev)
+                            if (next.has(a._id)) next.delete(a._id)
+                            else next.add(a._id)
+                            return next
+                          })
+                        }}
+                        className="text-slate-500 hover:text-white"
+                        aria-label={`Seleccionar ${a.nombre}`}
+                      >
+                        {selectedIds.has(a._id)
+                          ? <CheckSquare className="w-4 h-4 text-blue-400" />
+                          : <Square className="w-4 h-4" />}
+                      </button>
+                    </td>
                     <td className="px-4 py-3">
                       <Link href={`/superadmin/aseguradoras/${a._id}`} className="block">
                         <p className="font-medium text-white hover:text-blue-300">{a.nombre}</p>
@@ -173,6 +233,16 @@ export default function AseguradorasPage() {
       </div>
 
       {createOpen && <CreateModal onClose={() => setCreateOpen(false)} onCreated={() => { setCreateOpen(false); fetch() }} />}
+
+      {batchOpen && (
+        <DeleteBatchModal
+          aseguradoras={data.aseguradoras.filter((a: any) => selectedIds.has(a._id)).map((a: any) => ({
+            _id: a._id, nombre: a.nombre, slug: a.slug, email: a.email,
+          }))}
+          onClose={() => setBatchOpen(false)}
+          onSuccess={() => { setSelectedIds(new Set()); fetch() }}
+        />
+      )}
     </div>
   )
 }
