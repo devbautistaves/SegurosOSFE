@@ -114,3 +114,86 @@
 .status-pending_appointment {
   @apply bg-purple-100 text-purple-700 border-purple-300;
 }
+
+/* ============================================================
+   LANDING "CERTIFICADO DE COBERTURA" — identidad de seguro.
+   Todo prefijado .sg- para no tocar el resto de la app.
+   ============================================================ */
+
+/* Patrón de seguridad guilloché: anillos finos + hairlines diagonales,
+   como el fondo de un certificado o un billete. Muy sutil. */
+.sg-guilloche {
+  background-image:
+    repeating-radial-gradient(circle at 50% 42%, transparent 0 13px, rgba(14, 26, 43, 0.04) 13px 14px),
+    repeating-linear-gradient(38deg, transparent 0 11px, rgba(27, 94, 74, 0.035) 11px 12px),
+    repeating-linear-gradient(-38deg, transparent 0 11px, rgba(176, 135, 56, 0.03) 11px 12px);
+}
+
+/* Banda de seguridad: tira guilloché horizontal que divide secciones */
+.sg-band {
+  background-color: #0e1a2b;
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0 14px, rgba(176, 135, 56, 0.55) 14px 15px),
+    repeating-linear-gradient(90deg, transparent 0 5px, rgba(94, 179, 228, 0.12) 5px 5.5px);
+}
+
+/* Tarjeta certificado: papel con doble filete (orla) */
+.sg-cert {
+  background: #fbfaf5;
+  border: 1px solid rgba(14, 26, 43, 0.14);
+  box-shadow:
+    inset 0 0 0 1px #fbfaf5,
+    inset 0 0 0 2px rgba(176, 135, 56, 0.45),
+    0 30px 60px -25px rgba(14, 26, 43, 0.4);
+}
+
+/* Línea perforada / de corte del certificado */
+.sg-rule {
+  border-top: 1px dashed rgba(14, 26, 43, 0.22);
+}
+
+/* Sello VIGENTE: medallón con borde festoneado (estilo sello oficial) */
+.sg-seal {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 9999px;
+  color: #1b5e4a;
+  background:
+    radial-gradient(circle at 50% 50%, #ffffff 0 54%, transparent 55%),
+    conic-gradient(#b08738 0, #d9b25e 0);
+  /* borde festoneado vía mask de puntos en el anillo exterior */
+  box-shadow:
+    inset 0 0 0 3px #1b5e4a,
+    inset 0 0 0 4px rgba(176, 135, 56, 0.6),
+    0 6px 18px -8px rgba(14, 26, 43, 0.5);
+}
+.sg-seal::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 9999px;
+  border: 1px dashed rgba(27, 94, 74, 0.5);
+}
+
+/* Emboss de aparición del sello */
+@keyframes sg-seal-in {
+  0%   { opacity: 0; transform: scale(1.5) rotate(-12deg); }
+  70%  { opacity: 1; transform: scale(0.96) rotate(-12deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-12deg); }
+}
+.sg-seal-in { animation: sg-seal-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s both; }
+
+/* Entrada del certificado del hero */
+@keyframes sg-cert-in {
+  0%   { opacity: 0; transform: translateY(24px) rotate(1.5deg); }
+  100% { opacity: 1; transform: translateY(0) rotate(1.5deg); }
+}
+.sg-cert-in { animation: sg-cert-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-seal-in { animation: none; opacity: 1; transform: rotate(-12deg); }
+  .sg-cert-in { animation: none; opacity: 1; transform: rotate(1.5deg); }
+}
