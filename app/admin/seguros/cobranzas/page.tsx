@@ -27,7 +27,7 @@ import {
   CheckCircle2, Clock, ChevronLeft, ChevronRight,
   Phone, Car, MessageCircle, ChevronDown,
   Mail, BellRing, AlertTriangle, Send, RefreshCw,
-  BookOpen, Calendar, User as UserIcon, XCircle, MinusCircle,
+  BookOpen, Calendar, User as UserIcon, XCircle, MinusCircle, Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCatalogos } from "@/hooks/use-catalogos"
@@ -190,6 +190,16 @@ export default function CobranzasPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selected, setSelected] = useState<CobranzaEfectivo | null>(null)
+
+  // Selección múltiple para borrado en lote
+  const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const toggleSeleccion = (id: string) => setSeleccion(prev => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
   const [formData, setFormData] = useState<Partial<CobranzaEfectivo>>(EMPTY)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -239,6 +249,7 @@ export default function CobranzasPage() {
       if (search.trim()) params.search = search.trim()
       const res = await segurosAPI.getCobranzas(token, params)
       setCobranzas(res.cobranzas)
+      setSeleccion(new Set())
       // Mes inicial = mes actual (no auto-salto a mes con más data)
     } catch {
       toast({ title: "Error", description: "No se pudieron cargar las cobranzas", variant: "destructive" })
@@ -499,6 +510,23 @@ export default function CobranzasPage() {
     }
   }
 
+  const handleBulkDelete = async () => {
+    const token = localStorage.getItem("token")
+    if (!token || seleccion.size === 0) return
+    setIsBulkDeleting(true)
+    try {
+      const r = await segurosAPI.eliminarCobranzas(token, Array.from(seleccion))
+      toast({ title: `${r.cobranzasEliminadas} cobranza${r.cobranzasEliminadas !== 1 ? "s" : ""} eliminada${r.cobranzasEliminadas !== 1 ? "s" : ""}` })
+      setSeleccion(new Set())
+      setIsBulkDeleteOpen(false)
+      fetchData()
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "No se pudieron eliminar", variant: "destructive" })
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
   // ── Send batch notifications ─────────────────────────────────────────────────
   const handleSendBatch = async (tipo: NotifTipo) => {
     const token = localStorage.getItem("token")
@@ -672,11 +700,19 @@ export default function CobranzasPage() {
         {/* Table */}
         <Card className="border-border/50 bg-card/50">
           <CardHeader>
-            <CardTitle>
-              Clientes — <span className="text-emerald-500">{mesLabel}</span>
-              <span className="text-sm font-normal text-muted-foreground ml-2">
-                ({visibleCobranzas.length}{estadoFilter !== "all" ? ` de ${cobranzas.length}` : ""})
+            <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
+              <span>
+                Clientes — <span className="text-emerald-500">{mesLabel}</span>
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  ({visibleCobranzas.length}{estadoFilter !== "all" ? ` de ${cobranzas.length}` : ""})
+                </span>
               </span>
+              {seleccion.size > 0 && (
+                <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)} className="font-normal">
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  Eliminar {seleccion.size} seleccionada{seleccion.size !== 1 ? "s" : ""}
+                </Button>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -695,6 +731,20 @@ export default function CobranzasPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-muted-foreground">
+                      <th className="py-3 px-3 w-10">
+                        <input
+                          type="checkbox"
+                          aria-label="Seleccionar todas"
+                          checked={visibleCobranzas.length > 0 && visibleCobranzas.every(c => seleccion.has(c._id))}
+                          onChange={() => setSeleccion(prev => {
+                            const allSel = visibleCobranzas.every(c => prev.has(c._id))
+                            const next = new Set(prev)
+                            visibleCobranzas.forEach(c => allSel ? next.delete(c._id) : next.add(c._id))
+                            return next
+                          })}
+                          className="h-4 w-4 accent-emerald-600 cursor-pointer align-middle"
+                        />
+                      </th>
                       <th className="text-left py-3 px-3 font-medium">Nombre y Apellido</th>
                       <th className="text-left py-3 px-3 font-medium hidden sm:table-cell">Aseguradora</th>
                       <th className="text-left py-3 px-3 font-medium hidden md:table-cell">Patente</th>
@@ -710,7 +760,16 @@ export default function CobranzasPage() {
                       const pagoData = getPagoData(c)
                       const isUpdating = updatingPago === c._id
                       return (
-                        <tr key={c._id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                        <tr key={c._id} className={cn("border-b border-border/50 hover:bg-secondary/30 transition-colors", seleccion.has(c._id) && "bg-emerald-500/5")}>
+                          <td className="py-3 px-3">
+                            <input
+                              type="checkbox"
+                              aria-label={`Seleccionar ${c.nombreApellido}`}
+                              checked={seleccion.has(c._id)}
+                              onChange={() => toggleSeleccion(c._id)}
+                              className="h-4 w-4 accent-emerald-600 cursor-pointer align-middle"
+                            />
+                          </td>
                           {/* Nombre */}
                           <td className="py-3 px-3">
                             <div className="font-medium">{c.nombreApellido}</div>
@@ -1160,6 +1219,25 @@ export default function CobranzasPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete confirmation */}
+      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar {seleccion.size} cobranza{seleccion.size !== 1 ? "s" : ""}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vas a eliminar <strong>{seleccion.size}</strong> cobranza{seleccion.size !== 1 ? "s" : ""} con todo su historial de pagos. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleBulkDelete() }} disabled={isBulkDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isBulkDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
+              Eliminar {seleccion.size}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

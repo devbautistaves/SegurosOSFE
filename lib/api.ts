@@ -3140,6 +3140,9 @@ export const segurosAPI = {
     }),
   deleteCobranza: (token: string, id: string) =>
     fetchAPI<{ success: boolean }>(`/api/seguros/cobranzas/${id}`, { method: "DELETE", token }),
+  eliminarCobranzas: (token: string, ids: string[]) =>
+    fetchAPI<{ success: boolean; cobranzasEliminadas: number }>(
+      "/api/seguros/cobranzas/eliminar-multiple", { method: "POST", token, body: JSON.stringify({ ids }) }),
 
   // Sync automático de cuotas vencidas
   syncVencidas: (token: string) =>
