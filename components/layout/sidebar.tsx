@@ -95,7 +95,7 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
 
   return (
     <aside
-      className="h-screen w-64 min-w-[16rem] max-w-[16rem] flex-shrink-0 overflow-hidden shadow-lg"
+      className="h-full w-64 min-w-[16rem] max-w-[16rem] flex-shrink-0 overflow-hidden shadow-lg"
       style={{ background: BRAND_PRIMARY }}
     >
       <div className="flex h-full flex-col">
