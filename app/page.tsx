@@ -23,7 +23,7 @@ const SERIF = spectral.className
 const MONO = plex.className
 
 const RIESGOS = [
-  { icon: CalendarX2, text: "Una póliza vence y te enterás cuando el cliente ya se fue a otro broker." },
+  { icon: CalendarX2, text: "Una póliza vence y te enterás cuando el cliente ya se fue a la competencia." },
   { icon: FileSpreadsheet, text: "El Excel lo edita cualquiera y nadie sabe cuál es la versión buena." },
   { icon: CreditCard, text: "Las cuotas vencidas se acumulan y no sabés a quién reclamarle." },
   { icon: ShieldOff, text: "Un siniestro sin seguimiento es, casi siempre, un cliente perdido." },
@@ -43,11 +43,11 @@ const COBERTURAS = [
 const FAQS = [
   { q: "¿Cómo funcionan los 7 días gratis?", a: "Al registrarte arrancás con acceso PRO completo durante 7 días, sin tarjeta. Cargás pólizas, cobranzas y siniestros sin límites. Si al día 8 no elegiste un plan, tus datos quedan guardados pero no podés crear cosas nuevas hasta suscribirte." },
   { q: "¿Qué pasa con la PROMO de lanzamiento?", a: "Pagás $25.000/mes durante los primeros 3 meses con acceso PRO completo. Al mes 4 se renueva automáticamente como PRO Mensual ($45.000). Cancelás cuando quieras desde el panel." },
-  { q: "¿Mis datos quedan aislados?", a: "Sí. Cada cuenta es 100% multi-tenant: ningún otro broker puede ver tus clientes, pólizas o cobranzas." },
+  { q: "¿Mis datos quedan aislados?", a: "Sí. Cada cuenta es 100% multi-tenant: ningún otro PAS ni broker puede ver tus clientes, pólizas o cobranzas." },
   { q: "¿Puedo cancelar cuando quiera?", a: "Sí. La suscripción se cancela desde el panel y mantenés acceso PRO hasta el final del ciclo pagado. No reembolsamos el período en curso." },
   { q: "¿Cómo pago?", a: "Con MercadoPago. Los planes mensuales (PROMO y PRO Mensual) son suscripción recurrente; el PRO Anual se paga una vez. Procesamiento seguro, sin guardar datos de tarjeta en nuestro sistema." },
   { q: "¿Cuántos usuarios puedo tener?", a: "Sin límite en cualquier plan PRO. Sumá a todo tu equipo con roles diferenciados (admin, vendedor, soporte)." },
-  { q: "¿Quién está detrás de SegurOS?", a: "TusVentas, una empresa argentina con experiencia en CRMs para brokers de seguros." },
+  { q: "¿Quién está detrás de SegurOS?", a: "TusVentas, una empresa argentina con experiencia en CRMs para PAS y brokers de seguros." },
 ]
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
@@ -103,13 +103,14 @@ export default function LandingPage() {
       <section className="sg-guilloche relative overflow-hidden px-4 py-16 sm:px-6 md:py-24">
         <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
-            <Eyebrow>Art. 00 · tu cartera al día</Eyebrow>
+            <Eyebrow>Art. 00 · para PAS y brokers</Eyebrow>
             <h1 className={`${SERIF} mt-5 text-5xl font-semibold leading-[1.02] tracking-tight sm:text-6xl md:text-7xl`}>
               Que no se te<br />venza una sola<br /><span style={{ color: GREEN }}>póliza</span> <span className="italic" style={{ color: GOLD }}>nunca más</span>.
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed" style={{ color: "#42505f" }}>
-              Pólizas, cobranzas, siniestros y vencimientos con aviso automático.
-              Sin Excel, sin perderle el rastro a una renovación. Tu cartera, ordenada de verdad.
+              El CRM para productores asesores (PAS) y brokers: pólizas, cobranzas,
+              siniestros y vencimientos con aviso automático. Sin Excel, sin perderle
+              el rastro a una renovación. Tu cartera, ordenada de verdad.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -203,8 +204,8 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="text-center">
             <Eyebrow>Art. 02 · la cobertura</Eyebrow>
-            <h2 className={`${SERIF} mt-4 text-4xl font-semibold md:text-5xl`}>Todo lo que necesita un broker</h2>
-            <p className="mx-auto mt-3 max-w-xl" style={{ color: "#5a6675" }}>Pensado por gente que vivió la operación diaria de una agencia.</p>
+            <h2 className={`${SERIF} mt-4 text-4xl font-semibold md:text-5xl`}>Todo lo que necesita un PAS o broker</h2>
+            <p className="mx-auto mt-3 max-w-xl" style={{ color: "#5a6675" }}>Pensado por gente que vivió la operación diaria de una cartera de seguros.</p>
           </div>
           <div className="mt-12 grid gap-px overflow-hidden rounded-xl border sm:grid-cols-2 lg:grid-cols-4" style={{ borderColor: "rgba(14,26,43,0.12)", background: "rgba(14,26,43,0.1)" }}>
             {COBERTURAS.map(({ cod, icon: Icon, title, text }) => (
