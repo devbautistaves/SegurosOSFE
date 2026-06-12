@@ -449,57 +449,6 @@ export default function AdminSettingsPage() {
   </CardContent>
   </Card>
 
-        {/* Empresa 2 Company Settings - Solo visible cuando esta en esa empresa */}
-        {currentCompany.id === "paginas" || currentCompany.id === "seguros" && (
-          <Card className="border-blue-500/30 bg-blue-500/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-blue-400" />
-                Configuracion Empresa 2
-              </CardTitle>
-              <CardDescription>
-                Configura los parametros de comisiones para esta empresa
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="baseCommission">Comision Base por Venta</FieldLabel>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="baseCommission"
-                      type="number"
-                      value={baseCommissionInput}
-                      onChange={(e) => setBaseCommissionInput(e.target.value)}
-                      className="pl-9 bg-secondary/50"
-                      placeholder="200000"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Este monto se usara como comision base por venta para los vendedores de Empresa 2
-                  </p>
-                </Field>
-              </FieldGroup>
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleSaveCompanySettings}
-                  disabled={isSavingSettings}
-                  className="bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  {isSavingSettings ? (
-                    <>
-                      <Spinner className="mr-2 h-4 w-4" />
-                      Guardando...
-                    </>
-                  ) : (
-                    "Guardar Configuracion"
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
   </div>
   </DashboardLayout>
   )
