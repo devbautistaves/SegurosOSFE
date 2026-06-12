@@ -1,352 +1,300 @@
+// Landing de seguros.tusventas.com.ar — enfocada en la app SegurOS.
+// Adopta la identidad del panel: navy profundo + acento cyan, Inter, superficies
+// limpias. Hero con el dashboard real flotando en un teléfono + 2 CTAs.
+
 import Link from "next/link"
-import { Spectral, Public_Sans, IBM_Plex_Mono } from "next/font/google"
+import { Inter, IBM_Plex_Mono } from "next/font/google"
 import {
-  Shield, ArrowRight, Check, Users, Bell, FileText, CreditCard,
-  AlertTriangle, BarChart3, Smartphone, Layers,
-  CalendarX2, FileSpreadsheet, ShieldOff,
+  Shield, ArrowRight, LogIn, FileText, CreditCard, AlertTriangle,
+  Bell, Users, Smartphone, CheckCircle2, TrendingUp,
 } from "lucide-react"
 
-// Tipografías de la landing — solo acá, no tocan el panel.
-// Spectral: serif de documento legal (titulares). Public Sans: tipo oficial
-// (cuerpo). IBM Plex Mono: ledger actuarial (pólizas, fechas, primas).
-const spectral = Spectral({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-spectral", style: ["normal", "italic"] })
-const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public" })
-const plex = IBM_Plex_Mono({ weight: ["400", "500", "600"], subsets: ["latin"], variable: "--font-plex" })
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const mono = IBM_Plex_Mono({ weight: ["400", "500", "600"], subsets: ["latin"], variable: "--font-mono" })
 
-const PAPER = "#F6F4EE"
-const INK = "#0E1A2B"
-const GREEN = "#1B5E4A"
-const GOLD = "#B08738"
-const OXBLOOD = "#B23A2E"
+// Paleta tomada del panel (globals.css): primary 209 55% 23%, accent 200 70% 63%.
+const NAVY = "#102B45"
+const NAVY2 = "#1A4670"
+const CYAN = "#56B7E8"
+const INK = "#13243A"
+const BG = "#F4F8FC"
+const GREEN = "#1FA97E"
+const AMBER = "#E0A52B"
 
-const SERIF = spectral.className
-const MONO = plex.className
-
-const RIESGOS = [
-  { icon: CalendarX2, text: "Una póliza vence y te enterás cuando el cliente ya se fue a la competencia." },
-  { icon: FileSpreadsheet, text: "El Excel lo edita cualquiera y nadie sabe cuál es la versión buena." },
-  { icon: CreditCard, text: "Las cuotas vencidas se acumulan y no sabés a quién reclamarle." },
-  { icon: ShieldOff, text: "Un siniestro sin seguimiento es, casi siempre, un cliente perdido." },
+const BENEFICIOS = [
+  { icon: FileText, title: "Pólizas ordenadas", text: "Cargás, renovás y anulás con búsqueda instantánea por número, asegurado o ramo." },
+  { icon: CreditCard, title: "Cobranzas al día", text: "Cuotas cobradas, vencidas y compromisos mes a mes. Recordatorios por email y WhatsApp." },
+  { icon: Bell, title: "Avisos de vencimiento", text: "Alertas automáticas de renovación antes de que una póliza se te escape a la competencia." },
+  { icon: AlertTriangle, title: "Siniestros con seguimiento", text: "Registrás y seguís el ciclo completo de cada siniestro con su número y estado." },
+  { icon: Users, title: "Tu equipo, con roles", text: "Sumás vendedores y soporte, cada uno con sus permisos. Multi-tenant: tus datos aislados." },
+  { icon: Smartphone, title: "En el celular", text: "Instalable como app (PWA) en Android, iOS, Mac y Windows. Tu cartera, siempre encima." },
 ]
-
-const COBERTURAS = [
-  { cod: "01", icon: FileText, title: "Pólizas", text: "Cargás, renovás y anulás pólizas con todos sus datos. Búsqueda instantánea por número, asegurado o ramo." },
-  { cod: "02", icon: CreditCard, title: "Cobranzas", text: "Control mes a mes de cuotas: cobradas, vencidas, compromisos. Recordatorios por email y WhatsApp." },
-  { cod: "03", icon: AlertTriangle, title: "Siniestros", text: "Registrás y seguís el ciclo completo de cada siniestro con su número y estado." },
-  { cod: "04", icon: Bell, title: "Vencimientos", text: "Avisos automáticos de renovación y alertas de cuotas vencidas antes de que se te pasen." },
-  { cod: "05", icon: Users, title: "Multi-usuario", text: "Sumás a tu equipo con roles (admin, vendedor, soporte). Cada uno con sus permisos." },
-  { cod: "06", icon: BarChart3, title: "Dashboard", text: "Cartera total, vigentes, anuladas y cobranzas del mes, todo en una pantalla." },
-  { cod: "07", icon: Layers, title: "Catálogos propios", text: "Cargás las aseguradoras y ramos que vos vendés. SegurOS no te impone listas cerradas." },
-  { cod: "08", icon: Smartphone, title: "En el celular", text: "Instalable como app (PWA) en Android, iOS, Mac y Windows. Tu cartera, siempre encima." },
-]
-
-const FAQS = [
-  { q: "¿Cómo funcionan los 7 días gratis?", a: "Al registrarte arrancás con acceso PRO completo durante 7 días, sin tarjeta. Cargás pólizas, cobranzas y siniestros sin límites. Si al día 8 no elegiste un plan, tus datos quedan guardados pero no podés crear cosas nuevas hasta suscribirte." },
-  { q: "¿Qué pasa con la PROMO de lanzamiento?", a: "Pagás $25.000/mes durante los primeros 3 meses con acceso PRO completo. Al mes 4 se renueva automáticamente como PRO Mensual ($45.000). Cancelás cuando quieras desde el panel." },
-  { q: "¿Mis datos quedan aislados?", a: "Sí. Cada cuenta es 100% multi-tenant: ningún otro PAS ni broker puede ver tus clientes, pólizas o cobranzas." },
-  { q: "¿Puedo cancelar cuando quiera?", a: "Sí. La suscripción se cancela desde el panel y mantenés acceso PRO hasta el final del ciclo pagado. No reembolsamos el período en curso." },
-  { q: "¿Cómo pago?", a: "Con MercadoPago. Los planes mensuales (PROMO y PRO Mensual) son suscripción recurrente; el PRO Anual se paga una vez. Procesamiento seguro, sin guardar datos de tarjeta en nuestro sistema." },
-  { q: "¿Cuántos usuarios puedo tener?", a: "Sin límite en cualquier plan PRO. Sumá a todo tu equipo con roles diferenciados (admin, vendedor, soporte)." },
-  { q: "¿Quién está detrás de SegurOS?", a: "TusVentas, una empresa argentina con experiencia en CRMs para PAS y brokers de seguros." },
-]
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <span className={`${MONO} inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.22em]`} style={{ color: GOLD }}>
-      <span className="inline-block h-px w-7" style={{ background: GOLD }} />
-      {children}
-    </span>
-  )
-}
-
-function Seal({ label = "Vigente" }: { label?: string }) {
-  return (
-    <span className="sg-seal sg-seal-in">
-      <span className="flex flex-col items-center leading-none">
-        <Check className="h-4 w-4" strokeWidth={3} style={{ color: GREEN }} />
-        <span className={`${MONO} mt-1 text-[9px] font-bold uppercase tracking-[0.12em]`} style={{ color: GREEN }}>{label}</span>
-      </span>
-    </span>
-  )
-}
 
 export default function LandingPage() {
   return (
     <div
-      className={`${spectral.variable} ${publicSans.variable} ${plex.variable} min-h-screen selection:bg-[#1B5E4A] selection:text-white`}
-      style={{ background: PAPER, color: INK, fontFamily: "var(--font-public), system-ui, sans-serif" }}
+      className={`${inter.variable} ${mono.variable} min-h-screen`}
+      style={{ background: BG, color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}
     >
+      <style>{css}</style>
+
       {/* NAV */}
-      <header className="sticky top-0 z-40 border-b backdrop-blur" style={{ borderColor: "rgba(14,26,43,0.1)", background: "rgba(246,244,238,0.88)" }}>
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md" style={{ background: INK }}>
-              <Shield className="h-5 w-5" style={{ color: GOLD }} />
-            </div>
-            <span className={`${SERIF} text-xl font-semibold tracking-tight`}>SegurOS</span>
+      <header className="sg-nav">
+        <div className="sg-wrap sg-nav-row">
+          <Link href="/" className="sg-brand">
+            <span className="sg-brand-mark"><Shield size={18} strokeWidth={2.4} /></span>
+            <span className="sg-brand-name">Segur<span style={{ color: CYAN }}>OS</span></span>
           </Link>
-          <nav className={`${MONO} flex items-center gap-5 text-[12px] uppercase tracking-wider sm:gap-7`}>
-            <a href="#coberturas" className="hidden text-slate-600 transition-colors hover:text-[#0E1A2B] sm:inline">Coberturas</a>
-            <a href="#planes" className="hidden text-slate-600 transition-colors hover:text-[#0E1A2B] sm:inline">Planes</a>
-            <a href="#letra-chica" className="hidden text-slate-600 transition-colors hover:text-[#0E1A2B] sm:inline">Letra chica</a>
-            <Link href="/login" className="font-medium text-slate-700 transition-colors hover:text-[#0E1A2B]">Entrar</Link>
-            <Link href="/registro" className="rounded-md px-3.5 py-2 font-semibold text-white transition-opacity hover:opacity-90" style={{ background: GREEN }}>
-              7 días gratis
-            </Link>
+          <nav className="sg-nav-cta">
+            <Link href="/login" className="sg-link">Ingresar</Link>
+            <Link href="/registro" className="sg-btn sg-btn-cyan sg-btn-sm">Crear demo gratis</Link>
           </nav>
         </div>
       </header>
 
-      <div className="sg-band h-2.5" aria-hidden />
-
       {/* HERO */}
-      <section className="sg-guilloche relative overflow-hidden px-4 py-16 sm:px-6 md:py-24">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
-            <Eyebrow>Art. 00 · para PAS y brokers</Eyebrow>
-            <h1 className={`${SERIF} mt-5 text-5xl font-semibold leading-[1.02] tracking-tight sm:text-6xl md:text-7xl`}>
-              Que no se te<br />venza una sola<br /><span style={{ color: GREEN }}>póliza</span> <span className="italic" style={{ color: GOLD }}>nunca más</span>.
+      <section className="sg-hero">
+        <div className="sg-hero-glow" aria-hidden />
+        <div className="sg-hero-grid-bg" aria-hidden />
+        <div className="sg-wrap sg-hero-grid">
+          <div className="sg-hero-copy">
+            <span className="sg-eyebrow">CRM para PAS y brokers de seguros</span>
+            <h1 className="sg-h1">
+              Toda tu cartera de seguros,<br /><span style={{ color: CYAN }}>bajo control</span>.
             </h1>
-            <p className="mt-6 max-w-md text-lg leading-relaxed" style={{ color: "#42505f" }}>
-              El CRM para productores asesores (PAS) y brokers: pólizas, cobranzas,
-              siniestros y vencimientos con aviso automático. Sin Excel, sin perderle
-              el rastro a una renovación. Tu cartera, ordenada de verdad.
+            <p className="sg-sub">
+              Pólizas, cobranzas, siniestros y vencimientos con aviso automático.
+              Sin Excel, sin perderle el rastro a una renovación. SegurOS ordena tu
+              negocio y te avisa antes de que se te pase algo.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/registro"
-                className={`${MONO} inline-flex items-center justify-center gap-2 rounded-md px-7 py-4 text-xs font-semibold uppercase tracking-wider text-white transition-all hover:scale-[1.02]`}
-                style={{ background: GREEN, boxShadow: `0 14px 30px -12px ${GREEN}` }}
-              >
-                Empezar 7 días gratis <ArrowRight className="h-4 w-4" />
+            <div className="sg-hero-actions">
+              <Link href="/registro" className="sg-btn sg-btn-cyan sg-btn-lg">
+                Crear demo gratis <ArrowRight size={18} />
               </Link>
-              <a href="#planes" className={`${MONO} inline-flex items-center justify-center gap-2 rounded-md border px-7 py-4 text-xs uppercase tracking-wider transition-colors hover:border-[#0E1A2B]`} style={{ borderColor: "rgba(14,26,43,0.25)", color: INK }}>
-                Ver planes
-              </a>
+              <Link href="/login" className="sg-btn sg-btn-ghost sg-btn-lg">
+                <LogIn size={18} /> Ingresar app seguros
+              </Link>
             </div>
-            <p className={`${MONO} mt-4 text-[11px] uppercase tracking-wider`} style={{ color: "#8a93a1" }}>Sin tarjeta · acceso PRO completo · 1 minuto</p>
+            <ul className="sg-trust">
+              <li><CheckCircle2 size={15} /> 7 días gratis</li>
+              <li><CheckCircle2 size={15} /> Sin tarjeta</li>
+              <li><CheckCircle2 size={15} /> Tus datos aislados</li>
+            </ul>
           </div>
 
-          {/* CERTIFICADO DE COBERTURA — firma de la página */}
-          <div className="sg-cert-in mx-auto w-full max-w-md">
-            <div className="sg-cert rounded-lg p-7" style={{ transform: "rotate(1.5deg)" }}>
-              <div className={`${MONO} flex items-center justify-between text-[10px] uppercase tracking-[0.18em]`} style={{ color: GOLD }}>
-                <span>Certificado de cobertura</span>
-                <Shield className="h-4 w-4" />
-              </div>
-              <div className={`${SERIF} mt-2 text-lg font-semibold`}>Póliza vigente</div>
-              <dl className={`${MONO} mt-4 space-y-2.5 text-[12px]`}>
-                {[
-                  ["Póliza N°", "04-118827"],
-                  ["Asegurado", "Gómez, Juan A."],
-                  ["Ramo", "Automotor"],
-                  ["Vigencia", "01/06/26 → 01/06/27"],
-                ].map(([k, v]) => (
-                  <div key={k} className="flex items-baseline justify-between gap-4">
-                    <dt className="uppercase tracking-wider" style={{ color: "#7c8492" }}>{k}</dt>
-                    <dd className="font-medium" style={{ color: INK }}>{v}</dd>
-                  </div>
-                ))}
-              </dl>
-              <div className="sg-rule my-5" />
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className={`${MONO} text-[10px] uppercase tracking-wider`} style={{ color: "#7c8492" }}>Prima mensual</div>
-                  <div className={`${SERIF} text-2xl font-semibold`}>$48.500</div>
+          {/* Teléfono flotando con el dashboard */}
+          <div className="sg-phone-stage">
+            <div className="sg-chip sg-chip-a"><span className="sg-dot" style={{ background: GREEN }} /> Póliza renovada</div>
+            <div className="sg-chip sg-chip-b"><Bell size={13} /> 12 vencimientos avisados</div>
+
+            <div className="sg-phone">
+              <div className="sg-phone-notch" />
+              <div className="sg-screen">
+                <div className="sg-app-top">
+                  <span className="sg-app-mark"><Shield size={13} strokeWidth={2.6} /></span>
+                  <span className="sg-app-name">SegurOS</span>
+                  <span className="sg-app-avatar">MR</span>
                 </div>
-                <Seal />
+                <p className="sg-app-hi">Hola, Martín 👋</p>
+
+                <div className="sg-stats">
+                  <div className="sg-stat"><span className="sg-stat-k">Cartera</span><span className="sg-stat-v">$4,2M</span></div>
+                  <div className="sg-stat"><span className="sg-stat-k">Vigentes</span><span className="sg-stat-v">218</span></div>
+                  <div className="sg-stat sg-stat-accent"><span className="sg-stat-k">Cobrado</span><span className="sg-stat-v">92%</span></div>
+                </div>
+
+                <div className="sg-card">
+                  <div className="sg-card-h"><span>Vencimientos</span><span className="sg-card-tag">esta semana</span></div>
+                  {[
+                    { n: "Gómez · Automotor", s: "Por vencer", c: AMBER },
+                    { n: "Pérez SRL · Integral", s: "Por vencer", c: AMBER },
+                    { n: "Díaz · Vida", s: "Renovada", c: GREEN },
+                  ].map((r) => (
+                    <div key={r.n} className="sg-row">
+                      <span className="sg-row-n">{r.n}</span>
+                      <span className="sg-pill" style={{ color: r.c, background: `${r.c}1f` }}>{r.s}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="sg-card sg-cobranza">
+                  <div className="sg-card-h"><span>Cobranzas de junio</span><TrendingUp size={13} style={{ color: GREEN }} /></div>
+                  <div className="sg-bar"><span style={{ width: "92%" }} /></div>
+                  <div className="sg-cob-foot"><span>$2,1M / $2,3M</span><span style={{ color: GREEN }}>92%</span></div>
+                </div>
               </div>
             </div>
-            <p className={`${MONO} mt-5 text-center text-[10px] uppercase tracking-[0.18em]`} style={{ color: "#8a93a1" }}>
-              Tu cartera, sin una sola póliza vencida
-            </p>
           </div>
         </div>
+      </section>
 
-        <div className={`${MONO} mx-auto mt-16 grid max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-md border text-center`} style={{ borderColor: "rgba(14,26,43,0.12)", background: "rgba(14,26,43,0.08)" }}>
-          {[["100%", "multi-tenant"], ["0", "pólizas perdidas"], ["24/7", "tu cartera"]].map(([v, l]) => (
-            <div key={l} className="px-3 py-4" style={{ background: PAPER }}>
-              <div className={`${SERIF} text-3xl font-semibold`} style={{ color: GREEN }}>{v}</div>
-              <div className="mt-1 text-[10px] uppercase tracking-wider" style={{ color: "#7c8492" }}>{l}</div>
+      {/* BENEFICIOS */}
+      <section className="sg-wrap sg-benefits">
+        <div className="sg-benefits-head">
+          <span className="sg-eyebrow" style={{ color: NAVY2 }}>Todo en un solo lugar</span>
+          <h2 className="sg-h2">Lo que tu productora necesita, sin vueltas</h2>
+        </div>
+        <div className="sg-benefits-grid">
+          {BENEFICIOS.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="sg-bcard">
+              <span className="sg-bicon"><Icon size={20} strokeWidth={1.8} /></span>
+              <h3 className="sg-btitle">{title}</h3>
+              <p className="sg-btext">{text}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <div className="sg-band h-2.5" aria-hidden />
-
-      {/* EL RIESGO */}
-      <section id="riesgo" className="px-4 py-20 sm:px-6" style={{ background: INK }}>
-        <div className="mx-auto max-w-4xl">
-          <div className="text-center">
-            <span className={`${MONO} inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.22em]`} style={{ color: GOLD }}>
-              <span className="inline-block h-px w-7" style={{ background: GOLD }} /> Art. 01 · el riesgo
-            </span>
-            <h2 className={`${SERIF} mt-4 text-4xl font-semibold text-white md:text-5xl`}>Lo que pasa sin un sistema</h2>
-            <p className="mt-3" style={{ color: "#9aa6b4" }}>Con que te haya pasado uno solo, ya sabés de qué hablamos.</p>
-          </div>
-          <div className="mt-10 grid gap-3 md:grid-cols-2">
-            {RIESGOS.map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-start gap-4 rounded-lg p-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <Icon className="mt-0.5 h-5 w-5 flex-shrink-0" style={{ color: OXBLOOD }} />
-                <p className="text-sm leading-relaxed" style={{ color: "#c9d2dc" }}>{text}</p>
-              </div>
-            ))}
-          </div>
-          <p className={`${MONO} mt-8 text-center text-[11px] uppercase tracking-wider`} style={{ color: "#7c8492" }}>
-            La cobertura → un sistema hecho para tu agencia
-          </p>
-        </div>
-      </section>
-
-      {/* COBERTURAS (features) */}
-      <section id="coberturas" className="sg-guilloche px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="text-center">
-            <Eyebrow>Art. 02 · la cobertura</Eyebrow>
-            <h2 className={`${SERIF} mt-4 text-4xl font-semibold md:text-5xl`}>Todo lo que necesita un PAS o broker</h2>
-            <p className="mx-auto mt-3 max-w-xl" style={{ color: "#5a6675" }}>Pensado por gente que vivió la operación diaria de una cartera de seguros.</p>
-          </div>
-          <div className="mt-12 grid gap-px overflow-hidden rounded-xl border sm:grid-cols-2 lg:grid-cols-4" style={{ borderColor: "rgba(14,26,43,0.12)", background: "rgba(14,26,43,0.1)" }}>
-            {COBERTURAS.map(({ cod, icon: Icon, title, text }) => (
-              <div key={title} className="group p-6 transition-colors hover:bg-[#FBFAF5]" style={{ background: PAPER }}>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md" style={{ background: "rgba(27,94,74,0.1)" }}>
-                    <Icon className="h-5 w-5" style={{ color: GREEN }} />
-                  </div>
-                  <span className={`${MONO} text-xs`} style={{ color: GOLD }}>{cod}</span>
-                </div>
-                <h3 className={`${SERIF} mt-4 text-lg font-semibold`}>{title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "#5a6675" }}>{text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div className="sg-band h-2.5" aria-hidden />
-
-      {/* PLANES (pricing) */}
-      <section id="planes" className="px-4 py-20 sm:px-6" style={{ background: "#EFECE2" }}>
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center">
-            <Eyebrow>Art. 03 · la prima</Eyebrow>
-            <h2 className={`${SERIF} mt-4 text-4xl font-semibold md:text-5xl`}>Planes simples, sin letra chica acá</h2>
-            <p className="mt-3" style={{ color: "#5a6675" }}>7 días gratis sin tarjeta. Después elegís el plan que mejor te quede.</p>
-          </div>
-
-          {/* PROMO destacada — póliza de lanzamiento */}
-          <div className="sg-cert relative mt-10 overflow-hidden rounded-xl p-7 sm:p-9" style={{ transform: "none" }}>
-            <div className="flex flex-col items-start gap-6 md:flex-row md:items-center">
-              <div className="min-w-0 flex-1">
-                <span className={`${MONO} inline-block rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white`} style={{ background: OXBLOOD }}>
-                  Promo de lanzamiento
-                </span>
-                <h3 className={`${SERIF} mt-3 text-3xl font-semibold`}>$25.000/mes los primeros 3 meses</h3>
-                <p className="mt-1.5 text-sm" style={{ color: "#5a6675" }}>Después se renueva como PRO Mensual ($45.000). Cancelás cuando quieras.</p>
-                <ul className={`${MONO} mt-4 grid gap-x-6 gap-y-1.5 text-[12px] sm:grid-cols-2`} style={{ color: "#42505f" }}>
-                  {["Acceso PRO completo", "Sin límites en nada", "Usuarios ilimitados", "Soporte prioritario"].map((f) => (
-                    <li key={f} className="flex items-center gap-2"><Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: GREEN }} /> {f}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="flex flex-col items-start gap-3 md:items-end">
-                <div className={`${SERIF} text-5xl font-semibold`} style={{ color: GREEN }}>$25.000</div>
-                <Link href="/registro" className={`${MONO} inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white transition-all hover:scale-[1.02]`} style={{ background: GREEN }}>
-                  Empezar gratis <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <p className={`${MONO} mt-10 text-center text-[11px] uppercase tracking-wider`} style={{ color: "#7c8492" }}>o elegí el plan PRO directo</p>
-
-          <div className="mx-auto mt-8 grid max-w-3xl gap-5 md:grid-cols-2">
-            {/* PRO MENSUAL */}
-            <div className="sg-cert relative rounded-xl p-7" style={{ transform: "none" }}>
-              <span className={`${MONO} absolute -top-3 left-7 rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white`} style={{ background: GREEN }}>Más elegido</span>
-              <p className={`${MONO} text-[11px] uppercase tracking-widest`} style={{ color: GREEN }}>PRO Mensual</p>
-              <p className={`${SERIF} mt-2 text-4xl font-semibold`}>$45.000</p>
-              <p className={`${MONO} text-[11px] uppercase tracking-wider`} style={{ color: "#7c8492" }}>por mes · suscripción recurrente</p>
-              <ul className="mt-5 space-y-2 text-sm" style={{ color: "#42505f" }}>
-                {["Pólizas, cobranzas y siniestros ilimitados", "Usuarios ilimitados", "Email masivo a tus asegurados", "Soporte prioritario", "Cancelás cuando quieras"].map((f) => (
-                  <li key={f} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: GREEN }} /> {f}</li>
-                ))}
-              </ul>
-              <Link href="/registro" className={`${MONO} mt-6 block rounded-md py-3 text-center text-xs font-semibold uppercase tracking-wider text-white transition-opacity hover:opacity-90`} style={{ background: GREEN }}>Empezar gratis</Link>
-            </div>
-            {/* PRO ANUAL */}
-            <div className="sg-cert relative rounded-xl p-7" style={{ transform: "none" }}>
-              <span className={`${MONO} absolute -top-3 left-7 inline-flex items-center gap-1 rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white`} style={{ background: GOLD }}>Ahorrás $70.000</span>
-              <p className={`${MONO} text-[11px] uppercase tracking-widest`} style={{ color: GOLD }}>PRO Anual</p>
-              <p className={`${SERIF} mt-2 text-4xl font-semibold`}>$470.000</p>
-              <p className={`${MONO} text-[11px] uppercase tracking-wider`} style={{ color: "#7c8492" }}>por año · equivale a $39.166/mes</p>
-              <ul className="mt-5 space-y-2 text-sm" style={{ color: "#42505f" }}>
-                {["Todo lo del PRO Mensual", "Precio congelado 12 meses", "Un solo pago, sin renovaciones", "Ideal si ya estás convencido"].map((f) => (
-                  <li key={f} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: GOLD }} /> {f}</li>
-                ))}
-              </ul>
-              <Link href="/registro" className={`${MONO} mt-6 block rounded-md border py-3 text-center text-xs font-semibold uppercase tracking-wider transition-colors hover:bg-[#FBFAF5]`} style={{ borderColor: GOLD, color: INK }}>Empezar gratis</Link>
-            </div>
-          </div>
-
-          <p className={`${MONO} mt-8 text-center text-[10px] uppercase tracking-wider`} style={{ color: "#8a93a1" }}>
-            Todos los planes arrancan con 7 días gratis · pagás recién si decidís seguir
-          </p>
-        </div>
-      </section>
-
-      {/* LETRA CHICA (FAQ) */}
-      <section id="letra-chica" className="sg-guilloche px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-3xl">
-          <div className="text-center">
-            <Eyebrow>Art. 04 · la letra chica</Eyebrow>
-            <h2 className={`${SERIF} mt-4 text-4xl font-semibold`}>Sin sorpresas. Acá está todo.</h2>
-          </div>
-          <div className="mt-10 space-y-3">
-            {FAQS.map((f) => (
-              <details key={f.q} className="group rounded-lg border p-5" style={{ borderColor: "rgba(14,26,43,0.12)", background: "#FBFAF5" }}>
-                <summary className={`${MONO} flex cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-semibold uppercase tracking-wide`} style={{ color: INK }}>
-                  {f.q}
-                  <span className="text-xl leading-none transition-transform group-open:rotate-45" style={{ color: GOLD }}>+</span>
-                </summary>
-                <p className="mt-3 text-sm leading-relaxed" style={{ color: "#5a6675" }}>{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA FINAL */}
-      <section className="px-4 py-24 text-center sm:px-6" style={{ background: INK }}>
-        <div className="mx-auto max-w-2xl">
-          <div className="mb-7 flex justify-center"><Seal label="Al día" /></div>
-          <h2 className={`${SERIF} text-4xl font-semibold text-white md:text-5xl`}>
-            Tu cartera, <span className="italic" style={{ color: GOLD }}>asegurada</span> contra el olvido.
-          </h2>
-          <p className="mt-4" style={{ color: "#9aa6b4" }}>7 días gratis, sin tarjeta. Acceso PRO completo desde el día uno.</p>
-          <Link href="/registro" className={`${MONO} mt-8 inline-flex items-center gap-2 rounded-md px-9 py-4 text-xs font-semibold uppercase tracking-wider text-white transition-all hover:scale-[1.02]`} style={{ background: GREEN, boxShadow: `0 16px 36px -14px ${GREEN}` }}>
-            Crear mi cuenta gratis <ArrowRight className="h-4 w-4" />
-          </Link>
-          <p className={`${MONO} mt-4 text-[10px] uppercase tracking-wider`} style={{ color: "#6b7888" }}>Sin tarjeta · sin compromiso · 1 minuto</p>
+      <section className="sg-cta">
+        <div className="sg-cta-glow" aria-hidden />
+        <div className="sg-wrap sg-cta-inner">
+          <h2 className="sg-cta-h">Probá SegurOS gratis, 7 días</h2>
+          <p className="sg-cta-sub">Cargá tus pólizas y mirá tu cartera ordenada desde hoy. Sin tarjeta.</p>
+          <div className="sg-hero-actions sg-cta-actions">
+            <Link href="/registro" className="sg-btn sg-btn-cyan sg-btn-lg">Crear demo gratis <ArrowRight size={18} /></Link>
+            <Link href="/login" className="sg-btn sg-btn-ghost sg-btn-lg"><LogIn size={18} /> Ingresar app seguros</Link>
+          </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t px-4 py-9 sm:px-6" style={{ background: PAPER, borderColor: "rgba(14,26,43,0.1)" }}>
-        <div className={`${MONO} mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-[11px] uppercase tracking-wider sm:flex-row`} style={{ color: "#7c8492" }}>
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4" style={{ color: GREEN }} />
-            <span>© {new Date().getFullYear()} SegurOS — un producto de TusVentas</span>
-          </div>
-          <div className="flex gap-5">
-            <Link href="/login" className="transition-colors hover:text-[#0E1A2B]">Entrar</Link>
-            <Link href="/registro" className="transition-colors hover:text-[#0E1A2B]">Registrarse</Link>
-            <Link href="/terminos" className="transition-colors hover:text-[#0E1A2B]">Términos</Link>
-            <a href="mailto:segurosos@tusventas.com.ar" className="transition-colors hover:text-[#0E1A2B]">Contacto</a>
-          </div>
+      <footer className="sg-foot">
+        <div className="sg-wrap sg-foot-row">
+          <span className="sg-brand"><span className="sg-brand-mark sg-brand-mark-sm"><Shield size={14} strokeWidth={2.4} /></span><span className="sg-brand-name" style={{ fontSize: 16 }}>Segur<span style={{ color: CYAN }}>OS</span></span></span>
+          <span className="sg-foot-meta">Un producto de TusVentas · Hecho en Argentina</span>
+          <Link href="/login" className="sg-link">Ingresar</Link>
         </div>
       </footer>
     </div>
   )
 }
+
+const css = `
+.sg-wrap{ max-width:1140px; margin:0 auto; padding:0 22px; }
+
+.sg-btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-weight:600; text-decoration:none; border-radius:12px; transition:transform .2s, box-shadow .2s, background .2s, border-color .2s; white-space:nowrap; }
+.sg-btn-sm{ padding:9px 16px; font-size:14px; }
+.sg-btn-lg{ padding:15px 26px; font-size:16px; }
+.sg-btn-cyan{ background:${CYAN}; color:#06243a; box-shadow:0 14px 34px -14px ${CYAN}; }
+.sg-btn-cyan:hover{ transform:translateY(-2px); box-shadow:0 20px 44px -14px ${CYAN}; }
+.sg-btn-ghost{ background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.28); }
+.sg-btn-ghost:hover{ background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.5); }
+
+.sg-link{ color:#cfe0ee; text-decoration:none; font-weight:500; font-size:15px; transition:color .2s; }
+.sg-link:hover{ color:#fff; }
+
+.sg-brand{ display:inline-flex; align-items:center; gap:10px; text-decoration:none; color:#fff; }
+.sg-brand-mark{ display:grid; place-items:center; width:34px; height:34px; border-radius:10px; color:#06243a;
+  background:${CYAN}; box-shadow:0 6px 18px -8px ${CYAN}; }
+.sg-brand-mark-sm{ width:30px; height:30px; }
+.sg-brand-name{ font-size:21px; font-weight:700; letter-spacing:-.02em; color:#fff; }
+
+/* NAV */
+.sg-nav{ position:absolute; top:0; left:0; right:0; z-index:30; }
+.sg-nav-row{ display:flex; align-items:center; justify-content:space-between; height:78px; }
+.sg-nav-cta{ display:flex; align-items:center; gap:18px; }
+
+/* HERO */
+.sg-hero{ position:relative; overflow:hidden; color:#fff; padding:120px 0 96px;
+  background:linear-gradient(160deg, ${NAVY} 0%, #0c2138 45%, ${NAVY2} 130%); }
+.sg-hero-glow{ position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(46% 50% at 82% 28%, rgba(86,183,232,.30) 0%, transparent 62%),
+            radial-gradient(40% 44% at 10% 86%, rgba(86,183,232,.12) 0%, transparent 60%); }
+.sg-hero-grid-bg{ position:absolute; inset:0; opacity:.5; pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+  background-size:54px 54px; mask-image:linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent); }
+.sg-hero-grid{ position:relative; z-index:2; display:grid; gap:54px; align-items:center; grid-template-columns:1.04fr .96fr; }
+
+.sg-eyebrow{ font-family:var(--font-mono),monospace; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:${CYAN}; }
+.sg-h1{ margin:18px 0 0; font-size:clamp(2.6rem,5.2vw,4.1rem); font-weight:700; line-height:1.04; letter-spacing:-.03em; }
+.sg-sub{ margin:22px 0 0; max-width:30rem; font-size:1.075rem; line-height:1.6; color:#b9cbdc; }
+.sg-hero-actions{ display:flex; flex-wrap:wrap; gap:13px; margin-top:30px; }
+.sg-trust{ display:flex; flex-wrap:wrap; gap:18px; margin:26px 0 0; padding:0; list-style:none; }
+.sg-trust li{ display:inline-flex; align-items:center; gap:7px; font-size:14px; color:#9fb6c9; }
+.sg-trust svg{ color:${CYAN}; }
+
+/* PHONE */
+.sg-phone-stage{ position:relative; display:flex; justify-content:center; }
+.sg-phone{ position:relative; width:clamp(270px,30vw,322px); aspect-ratio:300/620;
+  background:#0a1726; border-radius:42px; padding:11px; border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 50px 90px -40px rgba(0,0,0,.85), 0 0 0 1px rgba(86,183,232,.18), 0 30px 70px -30px rgba(86,183,232,.45);
+  transform:rotate(2.4deg); animation:sgfloat 7s ease-in-out infinite; }
+.sg-phone-notch{ position:absolute; top:13px; left:50%; transform:translateX(-50%); width:38%; height:18px; border-radius:0 0 12px 12px; background:#0a1726; z-index:3; }
+.sg-screen{ position:relative; height:100%; border-radius:32px; overflow:hidden; padding:30px 14px 16px;
+  background:linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%); color:${INK}; display:flex; flex-direction:column; gap:11px; }
+.sg-app-top{ display:flex; align-items:center; gap:8px; }
+.sg-app-mark{ display:grid; place-items:center; width:24px; height:24px; border-radius:7px; background:${NAVY}; color:${CYAN}; }
+.sg-app-name{ font-weight:700; font-size:14px; letter-spacing:-.01em; color:${NAVY}; }
+.sg-app-avatar{ margin-left:auto; display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:${CYAN}; color:#06243a; font-size:10px; font-weight:700; }
+.sg-app-hi{ margin:0; font-size:13px; font-weight:600; color:#43576b; }
+.sg-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+.sg-stat{ background:#fff; border:1px solid #e2ecf5; border-radius:11px; padding:9px 8px; }
+.sg-stat-accent{ background:${NAVY}; border-color:${NAVY}; }
+.sg-stat-accent .sg-stat-k{ color:#9cc7e6; } .sg-stat-accent .sg-stat-v{ color:#fff; }
+.sg-stat-k{ display:block; font-size:9.5px; color:#7d93a8; font-weight:600; }
+.sg-stat-v{ display:block; font-size:16px; font-weight:700; letter-spacing:-.02em; margin-top:1px; color:${NAVY}; }
+.sg-card{ background:#fff; border:1px solid #e2ecf5; border-radius:13px; padding:11px 11px 9px; }
+.sg-card-h{ display:flex; align-items:center; justify-content:space-between; font-size:11.5px; font-weight:700; color:${NAVY}; margin-bottom:7px; }
+.sg-card-tag{ font-size:9px; font-weight:600; color:#7d93a8; text-transform:uppercase; letter-spacing:.06em; }
+.sg-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid #eef3f8; }
+.sg-row:first-of-type{ border-top:0; }
+.sg-row-n{ font-size:11px; color:#3a4f63; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sg-pill{ font-size:9px; font-weight:700; padding:3px 8px; border-radius:999px; white-space:nowrap; }
+.sg-cobranza .sg-bar{ height:8px; border-radius:999px; background:#e7eef5; overflow:hidden; margin:2px 0 7px; }
+.sg-cobranza .sg-bar span{ display:block; height:100%; border-radius:999px; background:linear-gradient(90deg, ${CYAN}, ${GREEN}); }
+.sg-cob-foot{ display:flex; justify-content:space-between; font-size:10.5px; font-weight:600; color:#5a6f83; }
+
+.sg-chip{ position:absolute; z-index:4; display:inline-flex; align-items:center; gap:7px; padding:9px 13px; border-radius:12px;
+  background:rgba(255,255,255,.96); color:${NAVY}; font-size:12.5px; font-weight:600;
+  box-shadow:0 18px 40px -16px rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.6); }
+.sg-chip svg{ color:${CYAN}; }
+.sg-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+.sg-chip-a{ top:12%; left:-6%; animation:sgfloat 6s ease-in-out infinite .4s; }
+.sg-chip-b{ bottom:14%; right:-9%; animation:sgfloat 6.6s ease-in-out infinite .9s; }
+
+/* BENEFITS */
+.sg-benefits{ padding:84px 22px; }
+.sg-benefits-head{ text-align:center; max-width:620px; margin:0 auto 46px; }
+.sg-h2{ margin:12px 0 0; font-size:clamp(1.8rem,3.6vw,2.6rem); font-weight:700; letter-spacing:-.025em; color:${INK}; }
+.sg-benefits-grid{ display:grid; gap:18px; grid-template-columns:repeat(3,1fr); }
+.sg-bcard{ background:#fff; border:1px solid #e4edf5; border-radius:18px; padding:24px 22px;
+  transition:transform .25s, box-shadow .25s, border-color .25s; }
+.sg-bcard:hover{ transform:translateY(-4px); border-color:${CYAN}; box-shadow:0 24px 50px -28px rgba(16,43,69,.4); }
+.sg-bicon{ display:grid; place-items:center; width:46px; height:46px; border-radius:13px; color:${NAVY2};
+  background:#e8f4fb; border:1px solid #cfe7f6; margin-bottom:15px; }
+.sg-btitle{ margin:0 0 6px; font-size:1.08rem; font-weight:700; letter-spacing:-.01em; color:${INK}; }
+.sg-btext{ margin:0; font-size:.94rem; line-height:1.55; color:#566a7d; }
+
+/* CTA */
+.sg-cta{ position:relative; overflow:hidden; margin:0 22px 64px; border-radius:28px;
+  background:linear-gradient(150deg, ${NAVY} 0%, ${NAVY2} 120%); color:#fff; }
+.sg-cta-glow{ position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(50% 80% at 80% 20%, rgba(86,183,232,.32) 0%, transparent 60%); }
+.sg-cta-inner{ position:relative; z-index:2; text-align:center; padding:64px 22px; max-width:1140px; }
+.sg-cta-h{ margin:0; font-size:clamp(1.9rem,4vw,2.8rem); font-weight:700; letter-spacing:-.025em; }
+.sg-cta-sub{ margin:14px 0 0; color:#bcd0e1; font-size:1.05rem; }
+.sg-cta-actions{ justify-content:center; margin-top:30px; }
+
+/* FOOT */
+.sg-foot{ background:${NAVY}; color:#cfe0ee; padding:26px 0; }
+.sg-foot-row{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.sg-foot-meta{ font-size:13px; color:#8aa3ba; }
+
+@keyframes sgfloat{ 0%,100%{ transform:translateY(0) rotate(2.4deg);} 50%{ transform:translateY(-14px) rotate(2.4deg);} }
+
+@media (max-width:880px){
+  .sg-hero-grid{ grid-template-columns:1fr; gap:44px; }
+  .sg-hero-copy{ text-align:center; }
+  .sg-sub{ margin-left:auto; margin-right:auto; }
+  .sg-hero-actions, .sg-trust{ justify-content:center; }
+  .sg-benefits-grid{ grid-template-columns:1fr 1fr; }
+}
+@media (max-width:560px){
+  .sg-benefits-grid{ grid-template-columns:1fr; }
+  .sg-chip-a{ left:0; } .sg-chip-b{ right:0; }
+}
+@media (prefers-reduced-motion:reduce){
+  .sg-phone, .sg-chip-a, .sg-chip-b{ animation:none; }
+}
+`
