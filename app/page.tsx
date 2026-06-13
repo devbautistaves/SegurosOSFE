@@ -64,7 +64,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <ul className="sg-trust">
-              <li><CheckCircle2 size={15} /> 3 días gratis</li>
+              <li><CheckCircle2 size={15} /> 7 días gratis</li>
               <li><CheckCircle2 size={15} /> Sin tarjeta</li>
               <li><CheckCircle2 size={15} /> Tus datos aislados</li>
             </ul>
@@ -120,7 +120,7 @@ export default function LandingPage() {
       <section className="sg-cta">
         <div className="sg-cta-glow" aria-hidden />
         <div className="sg-wrap sg-cta-inner">
-          <h2 className="sg-cta-h">Probá SegurOS gratis, 3 días</h2>
+          <h2 className="sg-cta-h">Probá SegurOS gratis, 7 días</h2>
           <p className="sg-cta-sub">Cargá tus pólizas y mirá tu cartera ordenada desde hoy. Sin tarjeta.</p>
           <div className="sg-hero-actions sg-cta-actions">
             <Link href="/registro" className="sg-btn sg-btn-cyan sg-btn-lg">Crear demo gratis <ArrowRight size={18} /></Link>

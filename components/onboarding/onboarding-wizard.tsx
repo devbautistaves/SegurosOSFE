@@ -262,7 +262,7 @@ function WelcomeGate({ brokerNombre, onActivar, onSkip }: { brokerNombre: string
         <div className="space-y-2">
           <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest">Bienvenido{brokerNombre ? ` a ${brokerNombre}` : ""}</p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
-            Activá tu prueba gratuita<br />de <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">3 días</span>
+            Activá tu prueba gratuita<br />de <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">7 días</span>
           </h1>
           <p className="text-sm text-slate-400 max-w-md mx-auto">
             Accedé a todo SegurOS sin tarjeta. En 5 minutos te dejamos el panel con tu marca, tu primera póliza cargada y un email enviado a un cliente.
@@ -287,7 +287,7 @@ function WelcomeGate({ brokerNombre, onActivar, onSkip }: { brokerNombre: string
         <div className="space-y-3">
           <button onClick={handle} disabled={activando}
             className="w-full px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-base font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 disabled:opacity-60 transition">
-            {activando ? <><Loader2 className="h-5 w-5 animate-spin" /> Activando...</> : <>Activar prueba gratuita de 3 días <ArrowRight className="h-5 w-5" /></>}
+            {activando ? <><Loader2 className="h-5 w-5 animate-spin" /> Activando...</> : <>Activar prueba gratuita de 7 días <ArrowRight className="h-5 w-5" /></>}
           </button>
           <button onClick={onSkip} disabled={activando}
             className="text-xs text-slate-500 hover:text-slate-300">

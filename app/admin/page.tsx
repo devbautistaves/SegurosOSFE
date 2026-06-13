@@ -818,7 +818,7 @@ export default function AdminDashboardPage() {
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-orange-500">{(st as any)?.totalARenovar ?? 0}</p>
-                      <p className="text-xs text-muted-foreground">A renovar (≤ 3 días)</p>
+                      <p className="text-xs text-muted-foreground">A renovar (≤ 7 días)</p>
                     </div>
                   </div>
                 </CardContent>

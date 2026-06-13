@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Download, X, Smartphone, Share, Plus } from "lucide-react"
 
 const STORAGE_KEY = "segurosos_install_dismissed_at"
-const REMIND_AFTER_MS = 1000 * 60 * 60 * 24 * 7 // 3 días
+const REMIND_AFTER_MS = 1000 * 60 * 60 * 24 * 7 // 7 días
 
 interface BIPEvent extends Event {
   prompt: () => Promise<void>
