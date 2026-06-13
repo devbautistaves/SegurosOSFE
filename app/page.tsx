@@ -64,7 +64,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <ul className="sg-trust">
-              <li><CheckCircle2 size={15} /> 7 días gratis</li>
+              <li><CheckCircle2 size={15} /> 3 días gratis</li>
               <li><CheckCircle2 size={15} /> Sin tarjeta</li>
               <li><CheckCircle2 size={15} /> Tus datos aislados</li>
             </ul>
@@ -120,7 +120,7 @@ export default function LandingPage() {
       <section className="sg-cta">
         <div className="sg-cta-glow" aria-hidden />
         <div className="sg-wrap sg-cta-inner">
-          <h2 className="sg-cta-h">Probá SegurOS gratis, 7 días</h2>
+          <h2 className="sg-cta-h">Probá SegurOS gratis, 3 días</h2>
           <p className="sg-cta-sub">Cargá tus pólizas y mirá tu cartera ordenada desde hoy. Sin tarjeta.</p>
           <div className="sg-hero-actions sg-cta-actions">
             <Link href="/registro" className="sg-btn sg-btn-cyan sg-btn-lg">Crear demo gratis <ArrowRight size={18} /></Link>
@@ -225,7 +225,7 @@ const css = `
 .sg-chip-b{ bottom:14%; right:-9%; animation:sgfloat 6.6s ease-in-out infinite .9s; }
 
 /* CTA */
-.sg-cta{ position:relative; overflow:hidden; margin:0 22px 64px; border-radius:28px;
+.sg-cta{ position:relative; overflow:hidden; margin:64px 22px; border-radius:28px;
   background:linear-gradient(150deg, ${NAVY} 0%, ${NAVY2} 120%); color:#fff; }
 .sg-cta-glow{ position:absolute; inset:0; pointer-events:none;
   background:radial-gradient(50% 80% at 80% 20%, rgba(86,183,232,.32) 0%, transparent 60%); }
