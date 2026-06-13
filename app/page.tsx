@@ -4,10 +4,7 @@
 
 import Link from "next/link"
 import { Inter, IBM_Plex_Mono } from "next/font/google"
-import {
-  Shield, ArrowRight, LogIn, FileText, CreditCard, AlertTriangle,
-  Bell, Users, Smartphone, CheckCircle2, TrendingUp,
-} from "lucide-react"
+import { Shield, ArrowRight, LogIn, Bell, CheckCircle2, TrendingUp } from "lucide-react"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const mono = IBM_Plex_Mono({ weight: ["400", "500", "600"], subsets: ["latin"], variable: "--font-mono" })
@@ -20,15 +17,6 @@ const INK = "#13243A"
 const BG = "#F4F8FC"
 const GREEN = "#1FA97E"
 const AMBER = "#E0A52B"
-
-const BENEFICIOS = [
-  { icon: FileText, title: "Pólizas ordenadas", text: "Cargás, renovás y anulás con búsqueda instantánea por número, asegurado o ramo." },
-  { icon: CreditCard, title: "Cobranzas al día", text: "Cuotas cobradas, vencidas y compromisos mes a mes. Recordatorios por email y WhatsApp." },
-  { icon: Bell, title: "Avisos de vencimiento", text: "Alertas automáticas de renovación antes de que una póliza se te escape a la competencia." },
-  { icon: AlertTriangle, title: "Siniestros con seguimiento", text: "Registrás y seguís el ciclo completo de cada siniestro con su número y estado." },
-  { icon: Users, title: "Tu equipo, con roles", text: "Sumás vendedores y soporte, cada uno con sus permisos. Multi-tenant: tus datos aislados." },
-  { icon: Smartphone, title: "En el celular", text: "Instalable como app (PWA) en Android, iOS, Mac y Windows. Tu cartera, siempre encima." },
-]
 
 export default function LandingPage() {
   return (
@@ -125,23 +113,6 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* BENEFICIOS */}
-      <section className="sg-wrap sg-benefits">
-        <div className="sg-benefits-head">
-          <span className="sg-eyebrow" style={{ color: NAVY2 }}>Todo en un solo lugar</span>
-          <h2 className="sg-h2">Lo que tu productora necesita, sin vueltas</h2>
-        </div>
-        <div className="sg-benefits-grid">
-          {BENEFICIOS.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="sg-bcard">
-              <span className="sg-bicon"><Icon size={20} strokeWidth={1.8} /></span>
-              <h3 className="sg-btitle">{title}</h3>
-              <p className="sg-btext">{text}</p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -253,19 +224,6 @@ const css = `
 .sg-chip-a{ top:12%; left:-6%; animation:sgfloat 6s ease-in-out infinite .4s; }
 .sg-chip-b{ bottom:14%; right:-9%; animation:sgfloat 6.6s ease-in-out infinite .9s; }
 
-/* BENEFITS */
-.sg-benefits{ padding:84px 22px; }
-.sg-benefits-head{ text-align:center; max-width:620px; margin:0 auto 46px; }
-.sg-h2{ margin:12px 0 0; font-size:clamp(1.8rem,3.6vw,2.6rem); font-weight:700; letter-spacing:-.025em; color:${INK}; }
-.sg-benefits-grid{ display:grid; gap:18px; grid-template-columns:repeat(3,1fr); }
-.sg-bcard{ background:#fff; border:1px solid #e4edf5; border-radius:18px; padding:24px 22px;
-  transition:transform .25s, box-shadow .25s, border-color .25s; }
-.sg-bcard:hover{ transform:translateY(-4px); border-color:${CYAN}; box-shadow:0 24px 50px -28px rgba(16,43,69,.4); }
-.sg-bicon{ display:grid; place-items:center; width:46px; height:46px; border-radius:13px; color:${NAVY2};
-  background:#e8f4fb; border:1px solid #cfe7f6; margin-bottom:15px; }
-.sg-btitle{ margin:0 0 6px; font-size:1.08rem; font-weight:700; letter-spacing:-.01em; color:${INK}; }
-.sg-btext{ margin:0; font-size:.94rem; line-height:1.55; color:#566a7d; }
-
 /* CTA */
 .sg-cta{ position:relative; overflow:hidden; margin:0 22px 64px; border-radius:28px;
   background:linear-gradient(150deg, ${NAVY} 0%, ${NAVY2} 120%); color:#fff; }
@@ -288,10 +246,8 @@ const css = `
   .sg-hero-copy{ text-align:center; }
   .sg-sub{ margin-left:auto; margin-right:auto; }
   .sg-hero-actions, .sg-trust{ justify-content:center; }
-  .sg-benefits-grid{ grid-template-columns:1fr 1fr; }
 }
 @media (max-width:560px){
-  .sg-benefits-grid{ grid-template-columns:1fr; }
   .sg-chip-a{ left:0; } .sg-chip-b{ right:0; }
 }
 @media (prefers-reduced-motion:reduce){
