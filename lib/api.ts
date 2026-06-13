@@ -952,6 +952,8 @@ export const onboardingAPI = {
     fetchAPI<{ success: boolean }>("/api/onboarding/skip", { method: "POST", token }),
   complete: (token: string) =>
     fetchAPI<{ success: boolean }>("/api/onboarding/complete", { method: "POST", token }),
+  seen: (token: string) =>
+    fetchAPI<{ success: boolean }>("/api/onboarding/seen", { method: "POST", token }),
   reopen: (token: string, step?: OnboardingStep) =>
     fetchAPI<{ success: boolean }>("/api/onboarding/reopen", {
       method: "POST", body: JSON.stringify({ step }), token,

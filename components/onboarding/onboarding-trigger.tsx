@@ -27,8 +27,11 @@ export function OnboardingTrigger() {
     onboardingAPI.state(token)
       .then(r => {
         setState(r.onboarding)
-        // Auto-abrir si NUNCA fue completado ni skipped
-        if (!r.onboarding.completedAt && !r.onboarding.skippedAt) {
+        // Auto-abrir UNA sola vez por cuenta: solo si nunca se mostró (startedAt),
+        // ni se completó ni se salteó. startedAt se persiste server-side al abrir,
+        // así no se reabre en otro dispositivo. Reabrir = botón (evento).
+        if (!r.onboarding.completedAt && !r.onboarding.skippedAt && !r.onboarding.startedAt) {
+          onboardingAPI.seen(token).catch(() => {})
           setOpen(true)
         }
       })
