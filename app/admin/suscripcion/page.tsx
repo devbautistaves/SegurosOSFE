@@ -13,6 +13,7 @@ export default function SuscripcionPage() {
   const [estado, setEstado] = useState<SuscripcionEstado | null>(null)
   const [loading, setLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
+  const [ciclo, setCiclo] = useState<"mensual" | "anual">("anual")
   const [err, setErr] = useState<string | null>(null)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
 
@@ -219,42 +220,63 @@ export default function SuscripcionPage() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-4">
-          {[
-            { plan: "PRO_MENSUAL" as const, ...estado.precios.PRO_MENSUAL, periodo: "mes", recomendado: false, extra: "" as string },
-            { plan: "PRO_ANUAL"   as const, ...estado.precios.PRO_ANUAL,   periodo: "año", recomendado: true,
-              extra: "Ahorrás 2 meses vs mensual" as string },
-          ].map(p => (
-            <div key={p.plan} className={`rounded-xl border-2 p-6 relative ${p.recomendado ? "border-blue-600 bg-blue-50" : "border-slate-200"}`}>
-              {p.recomendado && (
+        {(() => {
+          const anual = ciclo === "anual"
+          const mensualMonto = estado.precios.PRO_MENSUAL?.monto || 0
+          const anualMonto = estado.precios.PRO_ANUAL?.monto || 0
+          const equiv = anualMonto ? Math.round(anualMonto / 12) : 0
+          const plan = anual ? "PRO_ANUAL" : "PRO_MENSUAL"
+          return (
+            <>
+              {/* Toggle Mensual / Anual */}
+              <div className="flex items-center justify-center gap-3">
+                <span className={`text-sm font-medium ${anual ? "text-muted-foreground" : "text-foreground"}`}>Mensual</span>
+                <button
+                  role="switch" aria-checked={anual} aria-label="Cambiar a facturación anual"
+                  onClick={() => setCiclo(c => (c === "mensual" ? "anual" : "mensual"))}
+                  className={`relative h-7 w-12 rounded-full transition-colors flex-shrink-0 ${anual ? "bg-blue-600" : "bg-slate-300"}`}>
+                  <span className="absolute top-1 h-5 w-5 rounded-full bg-white transition-all" style={{ left: anual ? "26px" : "4px" }} />
+                </button>
+                <span className={`text-sm font-medium flex items-center gap-2 ${anual ? "text-foreground" : "text-muted-foreground"}`}>
+                  Anual <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-600 text-white">2 MESES GRATIS</span>
+                </span>
+              </div>
+
+              <div className="rounded-xl border-2 border-blue-600 bg-blue-50 p-6 relative max-w-md mx-auto">
                 <div className="absolute -top-3 left-6 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                  Recomendado
+                  PRO completo
                 </div>
-              )}
-              <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">{p.descripcion}</p>
-              <p className="text-4xl font-bold mt-2">{fmtMoney(p.monto)}</p>
-              <p className="text-sm text-muted-foreground">por {p.periodo}</p>
-              {p.extra && <p className="text-sm text-blue-700 font-medium mt-1">{p.extra}</p>}
+                <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">Todo sin límites</p>
+                <div className="flex items-end gap-2 mt-2">
+                  <p className="text-4xl font-bold">{fmtMoney(anual ? equiv : mensualMonto)}</p>
+                  <span className="text-sm text-muted-foreground mb-1">por mes</span>
+                </div>
+                {anual ? (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    <s>{fmtMoney(mensualMonto)}/mes</s> · facturado anualmente <b className="text-blue-700">{fmtMoney(anualMonto)}</b>
+                  </p>
+                ) : (
+                  <p className="text-sm text-blue-700 font-medium mt-1">Pasate a anual y ahorrá 2 meses</p>
+                )}
 
-              <ul className="space-y-2 mt-5 text-sm">
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> Pólizas ilimitadas</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> Cobranzas y siniestros ilimitados</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> Usuarios ilimitados</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> Notificaciones automáticas por email</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> Catálogos personalizables</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> Soporte prioritario</li>
-              </ul>
+                <ul className="space-y-2 mt-5 text-sm">
+                  {["Pólizas ilimitadas", "Cobranzas y siniestros ilimitados", "Usuarios ilimitados", "Notificaciones automáticas por email", "Catálogos personalizables", "Soporte prioritario"].map(f => (
+                    <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> {f}</li>
+                  ))}
+                  {anual && <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> 12 meses, 2 de regalo</li>}
+                </ul>
 
-              <button
-                onClick={() => checkout(p.plan)}
-                disabled={checkoutLoading !== null}
-                className={`w-full h-11 mt-6 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${p.recomendado ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
-              >
-                {checkoutLoading === p.plan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
-              </button>
-            </div>
-          ))}
-        </div>
+                <button
+                  onClick={() => checkout(plan)}
+                  disabled={checkoutLoading !== null}
+                  className="w-full h-11 mt-6 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {checkoutLoading === plan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
+                </button>
+              </div>
+            </>
+          )
+        })()}
         </>
       )}
 
