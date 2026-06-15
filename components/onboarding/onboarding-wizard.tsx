@@ -142,7 +142,7 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
             <span className="text-xs text-slate-500 hidden sm:inline">· ~5 minutos</span>
           </div>
           <button onClick={() => setConfirmSkip(true)}
-            className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5">
+            className="text-sm font-medium text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 transition-colors">
             <Clock className="h-3.5 w-3.5" /> Hacelo después
           </button>
         </div>
