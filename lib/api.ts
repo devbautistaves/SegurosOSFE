@@ -939,12 +939,17 @@ export interface OnboardingState {
   primerPolizaId: string | null
   primerEmailEnviadoEn: string | null
   primerPolizaEsPrueba: boolean
+  // Academia: keys de lecciones que el broker ya abrió (/admin/aprender).
+  academia?: { vistas: string[] }
 }
 
 export const onboardingAPI = {
   state: (token: string) =>
     fetchAPI<{ success: boolean; onboarding: OnboardingState }>("/api/onboarding/state", { token }),
-  advance: (token: string, data: Partial<Pick<OnboardingState, "currentStep" | "subStep" | "primerPolizaId" | "primerEmailEnviadoEn" | "primerPolizaEsPrueba">>) =>
+  advance: (
+    token: string,
+    data: Partial<Pick<OnboardingState, "currentStep" | "subStep" | "primerPolizaId" | "primerEmailEnviadoEn" | "primerPolizaEsPrueba">> & { academiaVistas?: string[] },
+  ) =>
     fetchAPI<{ success: boolean; onboarding: OnboardingState }>("/api/onboarding/advance", {
       method: "POST", body: JSON.stringify(data), token,
     }),

@@ -38,6 +38,20 @@
 
     --radius: 0.5rem;
 
+    /* Onboarding educativo (components/learn/*). Estos componentes son
+       reusables entre TurnOS/TallerOS/SegurOS y leen su acento de un set de
+       vars `--turnos-*`. Acá las aliaseamos al tema de SegurOS para no tocar
+       los componentes. */
+    --turnos-accent: hsl(var(--primary));
+    --turnos-accent-ink: hsl(var(--primary));
+    --turnos-ink: hsl(var(--foreground));
+    --turnos-muted: hsl(var(--muted-foreground));
+    --turnos-line: hsl(var(--border));
+    --turnos-line-strong: hsl(var(--muted-foreground) / 0.35);
+    --turnos-panel: hsl(var(--card));
+    --turnos-tint: hsl(var(--muted));
+    --turnos-danger: hsl(var(--destructive));
+
     /* Status colors */
     --status-pending: 48 96% 53%;
     --status-observed: 25 95% 53%;

@@ -10,12 +10,13 @@
 // normal. (El tour viejo de driver.js fue removido.)
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import confetti from "canvas-confetti"
 import { onboardingAPI, segurosAPI, type OnboardingState, type OnboardingStep } from "@/lib/api"
 import { FaseBranding } from "./fase-branding"
 import { FasePrimerPoliza } from "./fase-primer-poliza"
 import { FaseEmailCobranza } from "./fase-email-cobranza"
-import { Sparkles, Check, Clock, FileText, CreditCard, Palette, Trophy, Trash2, Loader2, Gift, ArrowRight, ShieldCheck } from "lucide-react"
+import { Sparkles, Check, Clock, FileText, CreditCard, Palette, Trophy, Trash2, Loader2, Gift, ArrowRight, ShieldCheck, GraduationCap } from "lucide-react"
 
 interface Props {
   onClose: () => void
@@ -385,6 +386,24 @@ function DoneScreen({ primerPolizaId, primerEmailEnviadoEn, primerPolizaEsPrueba
           <Check className="h-4 w-4" /> Póliza de prueba eliminada. Tu base quedó limpia.
         </div>
       )}
+
+      {/* Academia: lo que el sistema hace solo + cómo rinde cada función. */}
+      <Link
+        href="/admin/aprender"
+        onClick={onClose}
+        className="block rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 text-left hover:bg-blue-500/10 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center flex-shrink-0">
+            <GraduationCap className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white">¿Querés exprimir SegurOS?</p>
+            <p className="text-xs text-slate-400">Pasá por la <b className="text-blue-300">Academia</b>: lecciones cortas sobre lo que el sistema hace solo y las funciones que más rinden.</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-blue-300 flex-shrink-0 ml-auto" />
+        </div>
+      </Link>
 
       <button onClick={onClose} className="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white text-base font-semibold">
         Empezar a usar SegurOS →

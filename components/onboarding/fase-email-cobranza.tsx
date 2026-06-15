@@ -20,6 +20,7 @@
 import { useEffect, useState } from "react"
 import { CreditCard, Mail, AlertCircle, CheckCircle2, Send, Inbox, Loader2 } from "lucide-react"
 import { aseguradoraAPI, segurosAPI, type Aseguradora, type CobranzaEfectivo } from "@/lib/api"
+import { VigenciasReveal } from "@/components/learn/lessons"
 
 interface Props {
   primerPolizaId: string | null
@@ -143,6 +144,10 @@ export function FaseEmailCobranza({ primerPolizaId, primerPolizaEsPrueba, onEmai
             </div>
           )}
         </div>
+
+        {/* Reveal de lo invisible: SegurOS mantiene los estados al día solo. */}
+        <VigenciasReveal />
+
         <Nav onPrevFase={onPrevFase} onSkipFase={onSkipFase} skipLabel="Terminar setup →" skipPrimary />
       </div>
     )

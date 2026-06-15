@@ -20,6 +20,7 @@ import {
   Megaphone,
   Crown,
   Palette,
+  GraduationCap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -74,6 +75,7 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
     { href: "/admin/seguros/seguimiento", label: "Seguimiento",    icon: Activity,        tour: "nav-seguimiento" },
     ...(role === "admin" || role === "admin_seguros" ? [{ href: "/admin/users", label: "Usuarios", icon: Users, tour: "nav-users" }] : []),
     ...(role === "admin" || role === "admin_seguros" ? [{ href: "/admin/settings/catalogos", label: "Personalizar", icon: Palette, tour: "nav-personalizar" }] : []),
+    ...(role === "admin" || role === "admin_seguros" ? [{ href: "/admin/aprender", label: "Aprender", icon: GraduationCap, tour: "nav-aprender" }] : []),
     { href: "/admin/announcements",       label: "Anuncios",       icon: Megaphone,       tour: "nav-anuncios" },
     { href: "/admin/notifications",       label: "Notificaciones", icon: Bell,            tour: "nav-notif" },
     { href: "/admin/suscripcion",         label: "Suscripción",    icon: Crown,           tour: "nav-suscripcion" },
