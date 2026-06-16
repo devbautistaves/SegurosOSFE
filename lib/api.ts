@@ -878,9 +878,19 @@ export interface Aseguradora {
   ramosCatalogo: string[]
   medioDePagoCatalogo: string[]
   companiasConfig?: CompaniaConfig[]
+  datosCobro?: DatosCobro
   plan: "FREE" | "PRO"
   planStatus: "ACTIVO" | "VENCIDO" | "CANCELADO"
   planVencimiento?: string | null
+}
+
+export interface DatosCobro {
+  alias?: string
+  cbu?: string
+  titular?: string
+  banco?: string
+  linkPago?: string
+  nota?: string
 }
 
 export interface SuscripcionEstado {
@@ -975,7 +985,7 @@ export interface LegajoCobranza {
 }
 
 export interface LegajoPublico {
-  productor: { nombre: string; logo?: string; colorPrimario?: string; whatsapp?: string; telefono?: string; email?: string }
+  productor: { nombre: string; logo?: string; colorPrimario?: string; whatsapp?: string; telefono?: string; email?: string; datosCobro?: DatosCobro | null }
   cliente: { nombreApellido: string; dni?: string; email?: string; telefono?: string }
   vehiculos: LegajoVehiculo[]
   cuentaCorriente: LegajoCobranza[]

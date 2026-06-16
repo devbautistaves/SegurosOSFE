@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { aseguradoraAPI, suscripcionAPI, CompaniaConfig } from "@/lib/api"
+import { aseguradoraAPI, suscripcionAPI, CompaniaConfig, DatosCobro } from "@/lib/api"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Loader2, Plus, X, Save, Tag, Building2, CreditCard, Upload, Crown, ImageIcon, Phone, ChevronDown, ChevronRight, ShieldAlert, AppWindow } from "lucide-react"
 import { MisDatosSection } from "@/components/mis-datos-section"
@@ -73,6 +73,10 @@ export default function ConfigPROPage() {
   const [companias, setCompanias] = useState<CompaniaConfig[]>([])
   const [companiaAbierta, setCompaniaAbierta] = useState<string | null>(null)
 
+  // Datos de cobro que ve el asegurado en su legajo (cómo pagarte)
+  const [datosCobro, setDatosCobro] = useState<DatosCobro>({ alias: "", cbu: "", titular: "", banco: "", linkPago: "", nota: "" })
+  const setDC = (patch: Partial<DatosCobro>) => setDatosCobro(d => ({ ...d, ...patch }))
+
   const fileRef = useRef<HTMLInputElement>(null)
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
@@ -96,6 +100,7 @@ export default function ConfigPROPage() {
       setRamos(cat.ramosCatalogo || [])
       setMedios(cat.medioDePagoCatalogo || [])
       setCompanias(((a as any).companiasConfig || []) as CompaniaConfig[])
+      setDatosCobro({ alias: "", cbu: "", titular: "", banco: "", linkPago: "", nota: "", ...((a as any).datosCobro || {}) })
       setEsPRO(sus.plan === "PRO" && sus.planStatus === "ACTIVO")
     }).catch(e => setErr(e.message)).finally(() => setLoading(false))
   }, [])
@@ -105,7 +110,7 @@ export default function ConfigPROPage() {
     setSaving(true); setOk(null); setErr(null)
     try {
       await Promise.all([
-        aseguradoraAPI.updateMe(token, { nombre, whatsapp, email, telefono, cuit, direccion, colorPrimario }),
+        aseguradoraAPI.updateMe(token, { nombre, whatsapp, email, telefono, cuit, direccion, colorPrimario, datosCobro }),
         aseguradoraAPI.updateCatalogos(token, { aseguradorasCatalogo: aseguradoras, ramosCatalogo: ramos, medioDePagoCatalogo: medios }),
         aseguradoraAPI.updateCompanias(token, companias),
       ])
@@ -271,6 +276,42 @@ export default function ConfigPROPage() {
         </div>
 
         <p className="text-xs text-muted-foreground">Al cargar una póliza con aseguradora o ramo nuevo, se agrega automáticamente al catálogo.</p>
+
+        {/* ── Datos de cobro: cómo te paga el asegurado (aparece en su legajo) ── */}
+        <div className="rounded-xl border bg-white p-5">
+          <h2 className="font-semibold flex items-center gap-2 mb-1">
+            <CreditCard className="h-4 w-4 text-emerald-600" /> Cómo te pagan tus clientes
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Estos datos aparecen en el legajo del asegurado, en el bloque <strong>"Cómo pagar"</strong>, al lado de sus cuotas. Dejá vacío lo que no uses.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Alias</span>
+              <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm" placeholder="mi.alias.mp" value={datosCobro.alias || ""} onChange={e => setDC({ alias: e.target.value })} />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">CBU / CVU</span>
+              <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm" placeholder="0000003100000000000000" value={datosCobro.cbu || ""} onChange={e => setDC({ cbu: e.target.value })} />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Titular</span>
+              <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm" placeholder="Nombre del titular de la cuenta" value={datosCobro.titular || ""} onChange={e => setDC({ titular: e.target.value })} />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Banco / Billetera</span>
+              <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm" placeholder="Mercado Pago, Galicia, etc." value={datosCobro.banco || ""} onChange={e => setDC({ banco: e.target.value })} />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Link de pago (opcional)</span>
+              <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm" placeholder="https://mpago.la/… o link de Modo/débito" value={datosCobro.linkPago || ""} onChange={e => setDC({ linkPago: e.target.value })} />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Nota para el cliente (opcional)</span>
+              <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm" placeholder="Ej: mandame el comprobante por WhatsApp así te confirmo" value={datosCobro.nota || ""} onChange={e => setDC({ nota: e.target.value })} />
+            </label>
+          </div>
+        </div>
 
         {/* ── Compañías: info que ven los clientes en su legajo ── */}
         <div className="rounded-xl border bg-white p-5">
