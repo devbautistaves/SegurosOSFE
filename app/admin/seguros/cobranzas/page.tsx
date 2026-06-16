@@ -1,7 +1,9 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
+import { ComprobantesPendientesPanel } from "@/components/comprobantes-pendientes-panel"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -167,7 +169,19 @@ const NOTIF_CONFIG: Record<NotifTipo, { label: string; shortLabel: string; color
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────────
+// Lee ?comprobante=<cobranzaId>&mes=<mes> para auto-abrir el comprobante
+// cuando el PAS entra al panel desde el link del email.
+function useAutoOpenComprobante() {
+  const search = useSearchParams()
+  return useMemo(() => {
+    const cobranzaId = search.get("comprobante")
+    const mes = search.get("mes")
+    return cobranzaId && mes ? { cobranzaId, mes } : null
+  }, [search])
+}
+
 export default function CobranzasPage() {
+  const autoOpenKey = useAutoOpenComprobante()
   const { aseguradoras: ASEGURADORAS } = useCatalogos(ASEGURADORAS_DEFAULT, [])
   // Data
   const [cobranzas, setCobranzas] = useState<CobranzaEfectivo[]>([])
@@ -574,6 +588,8 @@ export default function CobranzasPage() {
     <DashboardLayout requiredRole={["admin", "admin_seguros"]}>
       <div>
         <div className="space-y-6">
+
+        <ComprobantesPendientesPanel autoOpenKey={autoOpenKey} />
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

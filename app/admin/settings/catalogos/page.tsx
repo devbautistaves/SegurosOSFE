@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { aseguradoraAPI, suscripcionAPI } from "@/lib/api"
+import { aseguradoraAPI, suscripcionAPI, CompaniaConfig } from "@/lib/api"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { Loader2, Plus, X, Save, Tag, Building2, CreditCard, Upload, Crown, ImageIcon } from "lucide-react"
+import { Loader2, Plus, X, Save, Tag, Building2, CreditCard, Upload, Crown, ImageIcon, Phone, ChevronDown, ChevronRight, ShieldAlert, AppWindow } from "lucide-react"
 import { MisDatosSection } from "@/components/mis-datos-section"
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -69,6 +69,10 @@ export default function ConfigPROPage() {
   const [ramos, setRamos] = useState<string[]>([])
   const [medios, setMedios] = useState<string[]>([])
 
+  // Config por compañía: teléfonos / app / sitio que ve el cliente en su legajo.
+  const [companias, setCompanias] = useState<CompaniaConfig[]>([])
+  const [companiaAbierta, setCompaniaAbierta] = useState<string | null>(null)
+
   const fileRef = useRef<HTMLInputElement>(null)
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
@@ -91,6 +95,7 @@ export default function ConfigPROPage() {
       setAseguradoras(cat.aseguradorasCatalogo || [])
       setRamos(cat.ramosCatalogo || [])
       setMedios(cat.medioDePagoCatalogo || [])
+      setCompanias(((a as any).companiasConfig || []) as CompaniaConfig[])
       setEsPRO(sus.plan === "PRO" && sus.planStatus === "ACTIVO")
     }).catch(e => setErr(e.message)).finally(() => setLoading(false))
   }, [])
@@ -102,6 +107,7 @@ export default function ConfigPROPage() {
       await Promise.all([
         aseguradoraAPI.updateMe(token, { nombre, whatsapp, email, telefono, cuit, direccion, colorPrimario }),
         aseguradoraAPI.updateCatalogos(token, { aseguradorasCatalogo: aseguradoras, ramosCatalogo: ramos, medioDePagoCatalogo: medios }),
+        aseguradoraAPI.updateCompanias(token, companias),
       ])
       // Sync localStorage: nombre/branding + TODOS los catálogos para que
       // useCatalogos los lea inmediatamente y el sidebar se redibuje.
@@ -265,6 +271,77 @@ export default function ConfigPROPage() {
         </div>
 
         <p className="text-xs text-muted-foreground">Al cargar una póliza con aseguradora o ramo nuevo, se agrega automáticamente al catálogo.</p>
+
+        {/* ── Compañías: info que ven los clientes en su legajo ── */}
+        <div className="rounded-xl border bg-white p-5">
+          <h2 className="font-semibold flex items-center gap-2 mb-1">
+            <Phone className="h-4 w-4 text-blue-600" /> Info por compañía para tus clientes
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Estos datos aparecen en el legajo público de cada asegurado, en el bloque <strong>"Si te pasa algo, ahora"</strong>.
+            Cargá lo que querés que vean.
+          </p>
+
+          {aseguradoras.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">Primero agregá compañías al catálogo de arriba.</p>
+          ) : (
+            <div className="space-y-2">
+              {aseguradoras.map(nombre => {
+                const conf = companias.find(c => c.nombre === nombre) || { nombre }
+                const tieneAlgo = !!(conf.telefonoAuxilio || conf.telefonoSiniestros || conf.appUrl || conf.sitioWeb || conf.notasDelPAS)
+                const abierta = companiaAbierta === nombre
+                const setConf = (patch: Partial<CompaniaConfig>) => {
+                  setCompanias(prev => {
+                    const idx = prev.findIndex(c => c.nombre === nombre)
+                    if (idx >= 0) {
+                      const next = [...prev]; next[idx] = { ...next[idx], ...patch }; return next
+                    }
+                    return [...prev, { nombre, ...patch }]
+                  })
+                }
+                const label = nombre.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+                return (
+                  <div key={nombre} className="border rounded-lg overflow-hidden">
+                    <button type="button" onClick={() => setCompaniaAbierta(abierta ? null : nombre)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left">
+                      {abierta ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                      <Building2 className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium text-sm flex-1">{label}</span>
+                      {tieneAlgo
+                        ? <span className="text-[11px] uppercase tracking-wide bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Configurada</span>
+                        : <span className="text-[11px] uppercase tracking-wide bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Sin datos</span>}
+                    </button>
+                    {abierta && (
+                      <div className="px-4 pb-4 pt-1 grid sm:grid-cols-2 gap-3 bg-gray-50/50">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><Phone className="h-3 w-3" />Auxilio en ruta (0800)</label>
+                          <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm bg-white" value={conf.telefonoAuxilio || ""} onChange={e => setConf({ telefonoAuxilio: e.target.value })} placeholder="0800 444 1234" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><ShieldAlert className="h-3 w-3" />Denuncia de siniestros</label>
+                          <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm bg-white" value={conf.telefonoSiniestros || ""} onChange={e => setConf({ telefonoSiniestros: e.target.value })} placeholder="0800 222 5252" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><AppWindow className="h-3 w-3" />App de la compañía (URL)</label>
+                          <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm bg-white" value={conf.appUrl || ""} onChange={e => setConf({ appUrl: e.target.value })} placeholder="https://..." />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sitio web</label>
+                          <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm bg-white" value={conf.sitioWeb || ""} onChange={e => setConf({ sitioWeb: e.target.value })} placeholder="https://..." />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Nota corta (lo que querés decirle al cliente)</label>
+                          <input className="mt-1 w-full h-9 rounded-md border px-3 text-sm bg-white" maxLength={200} value={conf.notasDelPAS || ""} onChange={e => setConf({ notasDelPAS: e.target.value })} placeholder="Ej: siempre pedí el N° de siniestro." />
+                          <p className="text-[11px] text-muted-foreground mt-1">Tip: cortita, sirve más como recordatorio que como manual.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
         <button onClick={guardar} disabled={saving} type="button" className="h-10 px-5 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-2 disabled:opacity-50">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar todos los cambios
