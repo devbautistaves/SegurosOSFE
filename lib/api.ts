@@ -159,14 +159,14 @@ export const authAPI = {
       method: "PUT", body: JSON.stringify({ pendiente }), token,
     }),
 
-  // Recuperar cuenta (olvidé mi contraseña) — código de 6 dígitos por email
+  // Recuperar cuenta (olvidé mi contraseña) — link con token de un solo uso
   forgotPassword: (email: string) =>
-    fetchAPI<{ success: boolean }>("/api/auth/forgot-password", {
+    fetchAPI<{ success: boolean; message: string }>("/api/auth/forgot-password", {
       method: "POST", body: JSON.stringify({ email }),
     }),
-  resetPassword: (email: string, code: string, newPassword: string) =>
-    fetchAPI<{ success: boolean }>("/api/auth/reset-password", {
-      method: "POST", body: JSON.stringify({ email, code, newPassword }),
+  resetPassword: (token: string, password: string) =>
+    fetchAPI<{ success: boolean; message: string }>("/api/auth/reset-password", {
+      method: "POST", body: JSON.stringify({ token, password }),
     }),
 }
 
