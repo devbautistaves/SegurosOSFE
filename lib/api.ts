@@ -158,6 +158,16 @@ export const authAPI = {
     fetchAPI<{ success: boolean; onboardingPendiente: boolean }>("/api/auth/onboarding", {
       method: "PUT", body: JSON.stringify({ pendiente }), token,
     }),
+
+  // Recuperar cuenta (olvidé mi contraseña) — código de 6 dígitos por email
+  forgotPassword: (email: string) =>
+    fetchAPI<{ success: boolean }>("/api/auth/forgot-password", {
+      method: "POST", body: JSON.stringify({ email }),
+    }),
+  resetPassword: (email: string, code: string, newPassword: string) =>
+    fetchAPI<{ success: boolean }>("/api/auth/reset-password", {
+      method: "POST", body: JSON.stringify({ email, code, newPassword }),
+    }),
 }
 
 // Users

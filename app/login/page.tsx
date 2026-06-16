@@ -16,6 +16,35 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
+  // Recuperar cuenta: "off" → login; "email" → pedir código; "code" → nueva contraseña
+  const [recoStep, setRecoStep] = useState<"off" | "email" | "code">("off")
+  const [recoCode, setRecoCode] = useState("")
+  const [recoNew, setRecoNew] = useState("")
+  const [recoMsg, setRecoMsg] = useState<string | null>(null)
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErr(null); setRecoMsg(null)
+    if (!email) { setErr("Ingresá tu email"); return }
+    setLoading(true)
+    try {
+      await authAPI.forgotPassword(email)
+      setRecoMsg("Si la cuenta existe, te enviamos un código de 6 dígitos.")
+      setRecoStep("code")
+    } catch (e: any) { setErr(e?.message || "No se pudo enviar") } finally { setLoading(false) }
+  }
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErr(null)
+    setLoading(true)
+    try {
+      await authAPI.resetPassword(email, recoCode, recoNew)
+      toast({ title: "Contraseña actualizada", description: "Ya podés ingresar con tu nueva contraseña." })
+      setPassword(""); setRecoCode(""); setRecoNew(""); setRecoStep("off")
+    } catch (e: any) { setErr(e?.message || "No se pudo cambiar") } finally { setLoading(false) }
+  }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr(null)
@@ -48,6 +77,7 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-7 shadow-2xl shadow-black/40">
+          {recoStep === "off" ? (<>
           <h2 className="text-2xl font-bold tracking-tight text-white text-center">Iniciá sesión</h2>
           <p className="text-sm text-slate-400 mb-6 text-center">Ingresá con tu email y contraseña.</p>
 
@@ -89,6 +119,10 @@ export default function LoginPage() {
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Ingresar <ArrowRight className="h-4 w-4" /></>}
             </button>
+            <button type="button" onClick={() => { setErr(null); setRecoStep("email") }}
+              className="w-full text-sm text-blue-300 hover:text-blue-200 transition-colors">
+              ¿Olvidaste tu contraseña?
+            </button>
           </form>
 
           {/* Separador */}
@@ -106,6 +140,52 @@ export default function LoginPage() {
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <p className="text-[11px] text-center text-slate-500 mt-2">7 días de prueba · sin tarjeta</p>
+          </>) : (
+          <>
+            <h2 className="text-2xl font-bold tracking-tight text-white text-center">Recuperá tu cuenta</h2>
+            <p className="text-sm text-slate-400 mb-6 text-center">
+              {recoStep === "email" ? "Te enviamos un código para crear una contraseña nueva." : <>Pegá el código que enviamos a <strong className="text-slate-300">{email}</strong>.</>}
+            </p>
+
+            {recoStep === "email" && (
+              <form onSubmit={handleForgot} className="space-y-4">
+                <Field icon={<Mail className="h-4 w-4" />} label="Email">
+                  <input className={inputCls} type="email" placeholder="vos@broker.com" value={email}
+                    onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+                </Field>
+                {err && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{err}</p>}
+                <button type="submit" disabled={loading}
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviarme el código"}
+                </button>
+              </form>
+            )}
+
+            {recoStep === "code" && (
+              <form onSubmit={handleReset} className="space-y-4">
+                {recoMsg && <p className="text-sm text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2">{recoMsg}</p>}
+                <Field icon={<Lock className="h-4 w-4" />} label="Código de 6 dígitos">
+                  <input className={inputCls} inputMode="numeric" maxLength={6} placeholder="••••••" value={recoCode}
+                    onChange={e => setRecoCode(e.target.value.replace(/\D/g, "").slice(0, 6))} required />
+                </Field>
+                <Field icon={<Lock className="h-4 w-4" />} label="Nueva contraseña">
+                  <input className={inputCls} type="password" placeholder="Mínimo 6 caracteres" value={recoNew}
+                    onChange={e => setRecoNew(e.target.value)} required minLength={6} autoComplete="new-password" />
+                </Field>
+                {err && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{err}</p>}
+                <button type="submit" disabled={loading || recoCode.length !== 6}
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cambiar contraseña"}
+                </button>
+              </form>
+            )}
+
+            <button type="button" onClick={() => { setErr(null); setRecoStep("off") }}
+              className="w-full text-sm text-slate-400 hover:text-slate-200 transition-colors mt-4">
+              ← Volver a ingresar
+            </button>
+          </>
+          )}
         </div>
 
         <p className="text-center text-xs text-slate-600 mt-6">© {new Date().getFullYear()} SegurOS — by TusVentas.</p>
