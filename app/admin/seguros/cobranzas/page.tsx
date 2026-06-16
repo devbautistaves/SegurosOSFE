@@ -1,5 +1,10 @@
 "use client"
 
+// Página auth-gated que usa useSearchParams (auto-abrir comprobante desde el
+// link del email). Forzamos render dinámico para que el build no intente
+// prerenderizarla estáticamente (useSearchParams sin Suspense rompe el export).
+export const dynamic = "force-dynamic"
+
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
