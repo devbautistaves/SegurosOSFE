@@ -276,11 +276,8 @@ export default function AdminUsersPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Usuarios</h1>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Building2 className="h-4 w-4" />
-              <span>Empresa: {currentCompany.name}</span>
-            </div>
+            <h1 className="text-3xl font-bold text-foreground">Equipo</h1>
+            <p className="text-muted-foreground">Administrá tu equipo y sus accesos</p>
           </div>
           <Button
             onClick={() => handleOpenDialog()}
@@ -316,7 +313,7 @@ export default function AdminUsersPage() {
                   <p className="text-2xl font-bold text-foreground">
                     {filteredUsers.filter((u) => u.role === "admin_seguros").length}
                   </p>
-                  <p className="text-xs text-muted-foreground">Admin Seguros</p>
+                  <p className="text-xs text-muted-foreground">Administradores</p>
                 </div>
               </div>
             </CardContent>
@@ -373,7 +370,7 @@ export default function AdminUsersPage() {
                 <SelectContent>
                   <SelectItem value="all">Todos los roles</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="admin_seguros">Admin Seguros</SelectItem>
+                  <SelectItem value="admin_seguros">Administrador</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -392,11 +389,8 @@ export default function AdminUsersPage() {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Usuario</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Empresa</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Contacto</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Rol</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Ventas</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Comisiones</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Estado</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Acciones</th>
                   </tr>
@@ -419,15 +413,6 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          (user.companyId || "prosegur") === "prosegur" 
-                            ? "bg-blue-500/20 text-blue-400" 
-                            : "bg-green-500/20 text-green-400"
-                        }`}>
-                          {(user.companyId === "alarmas" || user.companyId === "prosegur") ? "Alarmas" : (user.companyId === "paginas" || user.companyId === "tupaginaya") ? "Empresa 2" : user.companyId === "seguros" ? "Seguros" : user.companyId || "Alarmas"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
                         <div>
                           <p className="text-foreground">{user.phone}</p>
                           <p className="text-sm text-muted-foreground">{user.location}</p>
@@ -441,12 +426,8 @@ export default function AdminUsersPage() {
                                               : "bg-emerald-500/20 text-emerald-400"
                                           }`}
                                         >
-                                          {user.role === "admin" ? "Admin" : "Admin Seguros"}
+                                          {user.role === "admin" ? "Admin" : "Administrador"}
                                         </span>
-                      </td>
-                      <td className="py-3 px-4 text-foreground">{user.totalSales}</td>
-                      <td className="py-3 px-4 text-primary font-medium">
-                        {formatCurrency(user.totalCommissions)}
                       </td>
                       <td className="py-3 px-4">
                         {user.isActive ? (
@@ -487,7 +468,7 @@ export default function AdminUsersPage() {
                   ))}
                   {filteredUsers.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={5} className="py-8 text-center text-muted-foreground">
                         No se encontraron usuarios
                       </td>
                     </tr>
@@ -513,111 +494,6 @@ export default function AdminUsersPage() {
             </DialogHeader>
             <div className="flex-1 overflow-y-auto px-6 pb-2">
             <FieldGroup>
-              <Field>
-                <FieldLabel>Empresa Principal</FieldLabel>
-                <Select
-                  value={formData.companyId}
-                  onValueChange={(value: string) =>
-                    setFormData((prev) => ({ ...prev, companyId: value }))
-                  }
-                >
-                  <SelectTrigger className="bg-secondary/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="alarmas">Alarmas - Seguridad</SelectItem>
-                    <SelectItem value="paginas">Empresa 2 (Gestion clientes)</SelectItem>
-                    <SelectItem value="seguros">Seguros - Pólizas</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Empresa principal donde esta asignado este usuario
-                </p>
-              </Field>
-
-              {/* Empresas con acceso */}
-              <Field>
-                <FieldLabel>Empresas con Acceso</FieldLabel>
-                <div className="space-y-2 p-3 border border-border/50 rounded-lg bg-secondary/20">
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Selecciona en que empresas puede trabajar este usuario
-                  </p>
-                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-secondary/50">
-                    <input
-                      type="checkbox"
-                      checked={formData.allowedCompanies.includes("alarmas") || formData.companyId === "alarmas"}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData(prev => ({
-                            ...prev,
-                            allowedCompanies: [...prev.allowedCompanies.filter(c => c !== "alarmas"), "alarmas"]
-                          }))
-                        } else {
-                          // Si es la empresa principal, no permitir desmarcar
-                          if (formData.companyId === "alarmas") return
-                          setFormData(prev => ({
-                            ...prev,
-                            allowedCompanies: prev.allowedCompanies.filter(c => c !== "alarmas")
-                          }))
-                        }
-                      }}
-                      className="rounded border-border accent-primary"
-                    />
-                    <span className="text-sm">
-                      Alarmas - Seguridad {formData.companyId === "alarmas" && <span className="text-xs text-muted-foreground">(principal)</span>}
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-secondary/50">
-                    <input
-                      type="checkbox"
-                      checked={formData.allowedCompanies.includes("paginas") || formData.companyId === "paginas"}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData(prev => ({
-                            ...prev,
-                            allowedCompanies: [...prev.allowedCompanies.filter(c => c !== "paginas"), "paginas"]
-                          }))
-                        } else {
-                          // Si es la empresa principal, no permitir desmarcar
-                          if (formData.companyId === "paginas") return
-                          setFormData(prev => ({
-                            ...prev,
-                            allowedCompanies: prev.allowedCompanies.filter(c => c !== "paginas")
-                          }))
-                        }
-                      }}
-                      className="rounded border-border accent-primary"
-                    />
-                    <span className="text-sm">
-                      Empresa 2 (Gestion clientes) {formData.companyId === "paginas" && <span className="text-xs text-muted-foreground">(principal)</span>}
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-secondary/50">
-                    <input
-                      type="checkbox"
-                      checked={formData.allowedCompanies.includes("seguros") || formData.companyId === "seguros"}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData(prev => ({
-                            ...prev,
-                            allowedCompanies: [...prev.allowedCompanies.filter(c => c !== "seguros"), "seguros"]
-                          }))
-                        } else {
-                          if (formData.companyId === "seguros") return
-                          setFormData(prev => ({
-                            ...prev,
-                            allowedCompanies: prev.allowedCompanies.filter(c => c !== "seguros")
-                          }))
-                        }
-                      }}
-                      className="rounded border-border accent-primary"
-                    />
-                    <span className="text-sm">
-                      Seguros - Pólizas {formData.companyId === "seguros" && <span className="text-xs text-muted-foreground">(principal)</span>}
-                    </span>
-                  </label>
-                </div>
-              </Field>
               <Field>
                 <FieldLabel htmlFor="name">Nombre</FieldLabel>
                 <Input
