@@ -5,8 +5,7 @@
 // prerenderizarla estáticamente (useSearchParams sin Suspense rompe el export).
 export const dynamic = "force-dynamic"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
-import { useSearchParams } from "next/navigation"
+import { useEffect, useState, useCallback } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { ComprobantesPendientesPanel } from "@/components/comprobantes-pendientes-panel"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -175,14 +174,18 @@ const NOTIF_CONFIG: Record<NotifTipo, { label: string; shortLabel: string; color
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 // Lee ?comprobante=<cobranzaId>&mes=<mes> para auto-abrir el comprobante
-// cuando el PAS entra al panel desde el link del email.
+// cuando el PAS entra al panel desde el link del email. Usamos
+// window.location.search (client-only) en vez de useSearchParams para no
+// requerir un <Suspense> boundary y no romper el build.
 function useAutoOpenComprobante() {
-  const search = useSearchParams()
-  return useMemo(() => {
-    const cobranzaId = search.get("comprobante")
-    const mes = search.get("mes")
-    return cobranzaId && mes ? { cobranzaId, mes } : null
-  }, [search])
+  const [key, setKey] = useState<{ cobranzaId: string; mes: string } | null>(null)
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    const cobranzaId = sp.get("comprobante")
+    const mes = sp.get("mes")
+    if (cobranzaId && mes) setKey({ cobranzaId, mes })
+  }, [])
+  return key
 }
 
 export default function CobranzasPage() {
