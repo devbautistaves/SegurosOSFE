@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic"
 import { useEffect, useState, useCallback } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { ComprobantesPendientesPanel } from "@/components/comprobantes-pendientes-panel"
+import { LegajoShareModal } from "@/components/legajo-share-modal"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,7 +34,7 @@ import {
   CheckCircle2, Clock, ChevronLeft, ChevronRight,
   Phone, Car, MessageCircle, ChevronDown,
   Mail, BellRing, AlertTriangle, Send, RefreshCw,
-  BookOpen, Calendar, User as UserIcon, XCircle, MinusCircle, Loader2,
+  BookOpen, Calendar, User as UserIcon, XCircle, MinusCircle, Loader2, IdCard,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCatalogos } from "@/hooks/use-catalogos"
@@ -237,6 +238,12 @@ export default function CobranzasPage() {
 
   // Cuenta corriente dialog (historial de cuotas/pagos)
   const [ctaCteDialog, setCtaCteDialog] = useState<{ open: boolean; cobranza: CobranzaEfectivo | null }>({
+    open: false,
+    cobranza: null,
+  })
+
+  // Legajo: modal para compartir el legajo digital del asegurado (link + QR + WhatsApp)
+  const [legajoDialog, setLegajoDialog] = useState<{ open: boolean; cobranza: CobranzaEfectivo | null }>({
     open: false,
     cobranza: null,
   })
@@ -897,6 +904,15 @@ export default function CobranzasPage() {
                                   <MessageCircle className="h-4 w-4" />
                                 </Button>
                               )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Compartir legajo (link + QR)"
+                                className="text-violet-600 hover:text-violet-700 hover:bg-violet-500/10"
+                                onClick={(e) => { e.stopPropagation(); setLegajoDialog({ open: true, cobranza: c }) }}
+                              >
+                                <IdCard className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
                                 <Edit2 className="h-4 w-4" />
                               </Button>
@@ -1427,6 +1443,15 @@ export default function CobranzasPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Compartir legajo digital del asegurado */}
+      <LegajoShareModal
+        open={legajoDialog.open}
+        onClose={() => setLegajoDialog({ open: false, cobranza: null })}
+        nombreApellido={legajoDialog.cobranza?.nombreApellido || ""}
+        email={legajoDialog.cobranza?.email}
+        whatsapp={legajoDialog.cobranza?.whatsapp}
+      />
       </div>
     </DashboardLayout>
   )
