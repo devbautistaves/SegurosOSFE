@@ -72,7 +72,7 @@ export function LegajoShareModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <IdCard className="h-5 w-5 text-emerald-600" />
@@ -92,7 +92,7 @@ export function LegajoShareModal({
             {qr && (
               <div className="flex justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qr} alt="QR del legajo" className="h-44 w-44 rounded-lg border bg-white p-2" />
+                <img src={qr} alt="QR del legajo" className="h-40 w-40 max-w-[60vw] sm:h-44 sm:w-44 rounded-lg border bg-white p-2" />
               </div>
             )}
 
@@ -103,7 +103,7 @@ export function LegajoShareModal({
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button variant="outline" onClick={descargarQR} disabled={!qr} className="gap-2">
                 <Download className="h-4 w-4" /> Descargar QR
               </Button>
