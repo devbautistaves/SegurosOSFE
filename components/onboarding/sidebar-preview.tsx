@@ -4,7 +4,7 @@
 // onboarding. NO importa Sidebar real porque ese tiene router/links activos.
 // Reacciona a las props {logo, nombre, colorPrimario} y se actualiza al toque.
 
-import { Shield, LayoutDashboard, FileText, CreditCard, AlertTriangle, Activity, Palette, Bell, Crown } from "lucide-react"
+import { LayoutDashboard, FileText, CreditCard, AlertTriangle, Activity, Palette, Bell, Crown } from "lucide-react"
 
 interface SidebarPreviewProps {
   logo?: string
@@ -38,7 +38,8 @@ export function SidebarPreview({ logo, nombre, colorPrimario, activeIndex = 0 }:
               <img src={logo} alt={displayNombre} className="max-h-full max-w-full object-contain" />
             </div>
           ) : (
-            <Shield className="h-6 w-6 text-white flex-shrink-0" />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/icons/seguros-512.png" alt="SegurOS" className="h-8 w-8 object-contain flex-shrink-0" />
           )}
           <div className="min-w-0">
             <p className="text-[11px] font-bold leading-none truncate">{displayNombre}</p>

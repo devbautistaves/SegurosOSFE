@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { authAPI } from "@/lib/api"
 import { AuthShell } from "@/app/login/page"
-import { Shield, Loader2, ArrowRight, ArrowLeft, Mail, CheckCircle2 } from "lucide-react"
+import { Loader2, ArrowRight, ArrowLeft, Mail, CheckCircle2 } from "lucide-react"
 
 const inputCls = "w-full h-11 rounded-xl border border-white/10 bg-white/[0.03] pl-10 pr-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.05] transition-colors"
 
@@ -31,9 +31,8 @@ export default function RecuperarPage() {
     <AuthShell>
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
-            <Shield className="h-6 w-6 text-white" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/seguros-512.png" alt="SegurOS" className="h-12 w-12 object-contain" />
           <span className="text-2xl font-bold tracking-tight text-white">SegurOS</span>
         </div>
 
