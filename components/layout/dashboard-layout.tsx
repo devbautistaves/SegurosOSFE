@@ -146,10 +146,10 @@ export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col overflow-hidden">
+    <div className="h-screen bg-slate-100 flex flex-col overflow-hidden">
       <ImpersonationBanner />
       <TrialBanner />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div

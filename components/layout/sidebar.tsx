@@ -148,7 +148,7 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 overflow-y-auto">
+        <nav className="flex-1 min-h-0 p-3 overflow-y-auto">
           <div className="space-y-0.5">
             {links.map((link) => {
               const Icon = link.icon
