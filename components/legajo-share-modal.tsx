@@ -74,9 +74,9 @@ export function LegajoShareModal({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="w-[calc(100%-2rem)] max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <IdCard className="h-5 w-5 text-emerald-600" />
-            Legajo de {nombreApellido}
+          <DialogTitle className="flex items-start gap-2 pr-6">
+            <IdCard className="h-5 w-5 shrink-0 mt-0.5 text-emerald-600" />
+            <span className="min-w-0 break-words leading-snug">Legajo de {nombreApellido}</span>
           </DialogTitle>
           <DialogDescription>
             Compartí este link o QR con tu cliente: ve sus pólizas y cuotas, y sube sus comprobantes.
@@ -97,7 +97,7 @@ export function LegajoShareModal({
             )}
 
             <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
-              <span className="flex-1 truncate text-xs text-muted-foreground">{url || "—"}</span>
+              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{url || "—"}</span>
               <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={copiar} title="Copiar link">
                 {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
               </Button>
