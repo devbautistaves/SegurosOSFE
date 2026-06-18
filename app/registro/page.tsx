@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { authAPI, RegisterAseguradoraData } from "@/lib/api"
 import { AuthShell } from "../login/page"
 import {
-  Shield, Loader2, ArrowRight, ArrowLeft, Check, Building2, User, Mail, Lock,
+  Loader2, ArrowRight, ArrowLeft, Check, Building2, User, Mail, Lock,
   Eye, EyeOff, Sparkles, Phone, Palette, FileText, CreditCard,
 } from "lucide-react"
 
@@ -78,9 +78,8 @@ export default function RegistroPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
-            <Shield className="h-6 w-6 text-white" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/seguros-512.png" alt="SegurOS" className="h-12 w-12 object-contain" />
           <span className="text-2xl font-bold tracking-tight text-white">SegurOS</span>
         </div>
 

@@ -4,7 +4,7 @@
 
 import Link from "next/link"
 import { Inter, IBM_Plex_Mono } from "next/font/google"
-import { Shield, ArrowRight, LogIn, Bell, CheckCircle2, TrendingUp } from "lucide-react"
+import { ArrowRight, LogIn, Bell, CheckCircle2, TrendingUp } from "lucide-react"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const mono = IBM_Plex_Mono({ weight: ["400", "500", "600"], subsets: ["latin"], variable: "--font-mono" })
@@ -30,7 +30,8 @@ export default function LandingPage() {
       <header className="sg-nav">
         <div className="sg-wrap sg-nav-row">
           <Link href="/" className="sg-brand">
-            <span className="sg-brand-mark"><Shield size={18} strokeWidth={2.4} /></span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/seguros-512.png" alt="SegurOS" style={{ width: 34, height: 34, objectFit: "contain" }} />
             <span className="sg-brand-name">Segur<span style={{ color: CYAN }}>OS</span></span>
           </Link>
           <nav className="sg-nav-cta">
@@ -79,7 +80,8 @@ export default function LandingPage() {
               <div className="sg-phone-notch" />
               <div className="sg-screen">
                 <div className="sg-app-top">
-                  <span className="sg-app-mark"><Shield size={13} strokeWidth={2.6} /></span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/seguros-512.png" alt="SegurOS" style={{ width: 22, height: 22, objectFit: "contain" }} />
                   <span className="sg-app-name">SegurOS</span>
                   <span className="sg-app-avatar">MR</span>
                 </div>
@@ -131,7 +133,7 @@ export default function LandingPage() {
 
       <footer className="sg-foot">
         <div className="sg-wrap sg-foot-row">
-          <span className="sg-brand"><span className="sg-brand-mark sg-brand-mark-sm"><Shield size={14} strokeWidth={2.4} /></span><span className="sg-brand-name" style={{ fontSize: 16 }}>Segur<span style={{ color: CYAN }}>OS</span></span></span>
+          <span className="sg-brand">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/icons/seguros-512.png" alt="SegurOS" style={{ width: 30, height: 30, objectFit: "contain" }} /><span className="sg-brand-name" style={{ fontSize: 16 }}>Segur<span style={{ color: CYAN }}>OS</span></span></span>
           <span className="sg-foot-meta">Un producto de TusVentas · Hecho en Argentina</span>
           <Link href="/login" className="sg-link">Ingresar</Link>
         </div>

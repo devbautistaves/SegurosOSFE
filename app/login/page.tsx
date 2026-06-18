@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { authAPI } from "@/lib/api"
-import { Shield, Loader2, ArrowRight, Mail, Lock, Eye, EyeOff, Sparkles } from "lucide-react"
+import { Loader2, ArrowRight, Mail, Lock, Eye, EyeOff, Sparkles } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -40,9 +40,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
-            <Shield className="h-6 w-6 text-white" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/seguros-512.png" alt="SegurOS" className="h-12 w-12 object-contain" />
           <span className="text-2xl font-bold tracking-tight text-white">SegurOS</span>
         </div>
 

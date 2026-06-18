@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { saAuth } from "@/lib/superadmin-api"
-import { Shield, Loader2, Lock, AlertTriangle } from "lucide-react"
+import { Loader2, Lock, AlertTriangle } from "lucide-react"
 
 export default function SuperAdminLoginPage() {
   const router = useRouter()
@@ -38,9 +38,8 @@ export default function SuperAdminLoginPage() {
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/30">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/seguros-512.png" alt="SegurOS" className="h-12 w-12 object-contain" />
             <div>
               <div className="text-[10px] font-bold tracking-[0.3em] text-red-400">SEGUROS</div>
               <div className="text-xl font-black tracking-wider">SUPERADMIN</div>

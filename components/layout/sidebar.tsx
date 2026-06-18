@@ -16,7 +16,6 @@ import {
   FileText,
   Activity,
   AlertTriangle,
-  Shield,
   Megaphone,
   Crown,
   Palette,
@@ -110,7 +109,8 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
                 <img src={brokerLogo} alt={brokerNombre || "Broker"} className="max-h-full max-w-full object-contain" />
               </div>
             ) : (
-              <Shield className="h-7 w-7 text-white flex-shrink-0" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/icons/seguros-512.png" alt="SegurOS" className="h-9 w-9 object-contain flex-shrink-0" />
             )}
             <div className="min-w-0">
               <p className="text-sm font-bold text-white leading-none tracking-wide truncate">
