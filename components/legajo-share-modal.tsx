@@ -88,34 +88,20 @@ export function LegajoShareModal({
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-col items-stretch gap-3">
             {qr && (
-              <div className="flex justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qr} alt="QR del legajo" className="h-40 w-40 max-w-[60vw] sm:h-44 sm:w-44 rounded-lg border bg-white p-2" />
-              </div>
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={qr} alt="QR del legajo" style={{ display: "block", width: 176, height: 176, maxWidth: "100%", margin: "0 auto" }} className="rounded-lg border bg-white p-2" />
             )}
-
-            <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
-              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{url || "—"}</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={copiar} title="Copiar link">
-                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Button variant="outline" onClick={descargarQR} disabled={!qr} className="gap-2">
-                <Download className="h-4 w-4" /> Descargar QR
-              </Button>
-              <Button
-                onClick={enviarWhatsApp}
-                disabled={!whatsapp || !url}
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-                title={whatsapp ? "Enviar por WhatsApp" : "Esta cobranza no tiene WhatsApp cargado"}
-              >
-                <MessageCircle className="h-4 w-4" /> WhatsApp
-              </Button>
-            </div>
+            <Button variant="outline" className="w-full gap-2" onClick={copiar} disabled={!url}>
+              {copied ? <><Check className="h-4 w-4 text-emerald-600" /> Link copiado</> : <><Copy className="h-4 w-4" /> Copiar link</>}
+            </Button>
+            <Button onClick={enviarWhatsApp} disabled={!whatsapp || !url} className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white" title={whatsapp ? "Enviar por WhatsApp" : "Esta cobranza no tiene WhatsApp cargado"}>
+              <MessageCircle className="h-4 w-4" /> Enviar por WhatsApp
+            </Button>
+            <Button variant="ghost" className="w-full gap-2" onClick={descargarQR} disabled={!qr}>
+              <Download className="h-4 w-4" /> Descargar QR
+            </Button>
           </div>
         )}
       </DialogContent>
