@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Download, X, Smartphone, Share, Plus } from "lucide-react"
+import { Download, X, Smartphone, Share, Plus, MoreVertical } from "lucide-react"
 
 const STORAGE_KEY = "segurosos_install_dismissed_at"
 const REMIND_AFTER_MS = 1000 * 60 * 60 * 24 * 7 // 7 días
@@ -15,26 +15,39 @@ export function InstallAppPrompt() {
   const [deferred, setDeferred] = useState<BIPEvent | null>(null)
   const [open, setOpen] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
+  const [hidden, setHidden] = useState(true) // oculto hasta confirmar que NO está instalada
 
   useEffect(() => {
     if (typeof window === "undefined") return
     const standalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true
     if (standalone) return
-    const dismissedAt = Number(localStorage.getItem(STORAGE_KEY) || 0)
-    if (dismissedAt && Date.now() - dismissedAt < REMIND_AFTER_MS) return
+    setHidden(false)
 
     const ua = window.navigator.userAgent || ""
     const ios = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream
     setIsIOS(ios)
 
+    const cooldownActive = () => {
+      const d = Number(localStorage.getItem(STORAGE_KEY) || 0)
+      return !!d && Date.now() - d < REMIND_AFTER_MS
+    }
+
     const onBip = (e: Event) => {
       e.preventDefault()
       setDeferred(e as BIPEvent)
-      setTimeout(() => setOpen(true), 2500)
+      if (!cooldownActive()) setTimeout(() => setOpen(true), 2000)
     }
     window.addEventListener("beforeinstallprompt", onBip)
-    if (ios) setTimeout(() => setOpen(true), 2500)
-    return () => window.removeEventListener("beforeinstallprompt", onBip)
+    if (ios && !cooldownActive()) setTimeout(() => setOpen(true), 2000)
+
+    // Disparo manual desde el botón fijo (ignora el cooldown).
+    const onManual = () => setOpen(true)
+    window.addEventListener("open-install-prompt", onManual)
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBip)
+      window.removeEventListener("open-install-prompt", onManual)
+    }
   }, [])
 
   const install = async () => {
@@ -49,49 +62,71 @@ export function InstallAppPrompt() {
     setOpen(false)
   }
 
-  if (!open) return null
+  if (hidden) return null
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-4">
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
-        <button onClick={dismiss} className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Cerrar">
-          <X className="h-4 w-4" />
+    <>
+      {/* Botón fijo: siempre disponible, no depende del auto-prompt de Chrome. */}
+      {!open && (
+        <button onClick={() => setOpen(true)} aria-label="Instalar app"
+          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition">
+          <Download className="h-4 w-4" /> Instalar app
         </button>
-        <div className="bg-blue-600 p-6 text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
-              <Smartphone className="h-6 w-6" />
+      )}
+
+      {open && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-4">
+          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+            <button onClick={dismiss} className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Cerrar">
+              <X className="h-4 w-4" />
+            </button>
+            <div className="bg-blue-600 p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
+                  <Smartphone className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider opacity-80">SegurOS</p>
+                  <h2 className="text-xl font-bold">Instalá la app</h2>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider opacity-80">SegurOS</p>
-              <h2 className="text-xl font-bold">Instalá la app</h2>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">
+                Tené SegurOS siempre a mano en tu celular o computadora. Funciona como app nativa.
+              </p>
+              {isIOS ? (
+                <div className="space-y-3 rounded-lg border bg-slate-50 p-4">
+                  <p className="text-sm font-medium">En iPhone / iPad:</p>
+                  <ol className="space-y-2 text-sm text-slate-600">
+                    <li className="flex gap-2 items-start"><span className="font-bold text-blue-600">1.</span><span>Tocá <Share className="inline h-4 w-4 mx-1" /> <strong>Compartir</strong> en Safari.</span></li>
+                    <li className="flex gap-2 items-start"><span className="font-bold text-blue-600">2.</span><span><Plus className="inline h-4 w-4 mx-1" /> <strong>"Agregar a pantalla de inicio"</strong>.</span></li>
+                    <li className="flex gap-2 items-start"><span className="font-bold text-blue-600">3.</span><span>Tocá <strong>"Agregar"</strong>.</span></li>
+                  </ol>
+                  <button onClick={dismiss} className="w-full h-10 rounded-md bg-blue-600 text-white font-semibold">Entendido</button>
+                </div>
+              ) : deferred ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={dismiss} className="h-10 rounded-md border border-slate-300 text-sm font-medium">Más tarde</button>
+                  <button onClick={install} className="h-10 rounded-md bg-blue-600 text-white font-semibold flex items-center justify-center gap-2">
+                    <Download className="h-4 w-4" /> Instalar
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3 rounded-lg border bg-slate-50 p-4">
+                  <p className="text-sm font-medium">En Android (Chrome):</p>
+                  <ol className="space-y-2 text-sm text-slate-600">
+                    <li className="flex gap-2 items-start"><span className="font-bold text-blue-600">1.</span><span>Abrí el menú <MoreVertical className="inline h-4 w-4 mx-1" /> (3 puntitos) arriba a la derecha.</span></li>
+                    <li className="flex gap-2 items-start"><span className="font-bold text-blue-600">2.</span><span>Tocá <strong>"Instalar app"</strong> o <strong>"Agregar a pantalla de inicio"</strong>.</span></li>
+                    <li className="flex gap-2 items-start"><span className="font-bold text-blue-600">3.</span><span>Confirmá <strong>"Instalar"</strong>.</span></li>
+                  </ol>
+                  <button onClick={dismiss} className="w-full h-10 rounded-md bg-blue-600 text-white font-semibold">Entendido</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-slate-600">
-            Tené SegurOS siempre a mano en tu celular o computadora. Funciona como app nativa.
-          </p>
-          {isIOS ? (
-            <div className="space-y-3 rounded-lg border bg-slate-50 p-4">
-              <p className="text-sm font-medium">En iPhone / iPad:</p>
-              <ol className="space-y-2 text-sm text-slate-600">
-                <li className="flex gap-2 items-start"><span className="font-bold text-blue-600">1.</span><span>Tocá <Share className="inline h-4 w-4 mx-1" /> <strong>Compartir</strong> en Safari.</span></li>
-                <li className="flex gap-2 items-start"><span className="font-bold text-blue-600">2.</span><span><Plus className="inline h-4 w-4 mx-1" /> <strong>"Agregar a pantalla de inicio"</strong>.</span></li>
-                <li className="flex gap-2 items-start"><span className="font-bold text-blue-600">3.</span><span>Tocá <strong>"Agregar"</strong>.</span></li>
-              </ol>
-              <button onClick={dismiss} className="w-full h-10 rounded-md bg-blue-600 text-white font-semibold">Entendido</button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={dismiss} className="h-10 rounded-md border border-slate-300 text-sm font-medium">Más tarde</button>
-              <button onClick={install} disabled={!deferred} className="h-10 rounded-md bg-blue-600 text-white font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
-                <Download className="h-4 w-4" /> Instalar
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   )
 }
