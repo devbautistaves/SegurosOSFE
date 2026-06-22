@@ -742,6 +742,24 @@ export default function AdminDashboardPage() {
             />
           </div>
 
+          {/* Empty-state: si la cuenta no tiene pólizas, empujamos a importar la cartera */}
+          {st && (((st.totalVigentes || 0) + (st.totalAnuladas || 0) + ((st as any).totalARenovar || 0) + ((st as any).totalNoVigentes || 0)) === 0) && (
+            <Link href="/admin/seguros/polizas/importar" className="block">
+              <Card className="border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10 transition-colors cursor-pointer">
+                <CardContent className="p-5 flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                  <div className="h-12 w-12 shrink-0 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                    <FileText className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-foreground">Todavía no cargaste pólizas — importá tu cartera</p>
+                    <p className="text-sm text-muted-foreground">Subí tu Excel/CSV y cargamos todas tus pólizas de una. ¿Se complica? Soporte la sube por vos, sin costo.</p>
+                  </div>
+                  <Button className="shrink-0 gap-2 bg-blue-600 hover:bg-blue-700">Importar cartera →</Button>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+
           {/* Row 1: Stats generales */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Link href="/admin/seguros/polizas?estado=VIGENTE">
