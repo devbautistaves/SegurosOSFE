@@ -23,8 +23,12 @@ import { useToast } from "@/hooks/use-toast"
 import { polizasAPI } from "@/lib/api"
 import {
   Upload, FileSpreadsheet, ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle,
-  XCircle, Download, Loader2, Wand2, Save, ListChecks,
+  XCircle, Download, Loader2, Wand2, Save, ListChecks, MessageCircle, LifeBuoy,
 } from "lucide-react"
+
+// Soporte de la flota (WhatsApp). Si la importación falla o el broker no puede,
+// le ofrecemos mandar el archivo y que lo subamos manualmente.
+const SOPORTE_WA = "5491135767915"
 
 type Diagnostico = {
   ok: boolean
@@ -73,6 +77,44 @@ function fmtCell(v: unknown): string {
   return String(v)
 }
 
+// Abre WhatsApp de soporte con un mensaje pre-armado (incluye datos de la cuenta).
+function abrirSoporte(motivo?: string) {
+  let quien = ""
+  try {
+    const u = JSON.parse(localStorage.getItem("user") || "null")
+    if (u) quien = ` Soy ${u.name || u.email || ""}${u.name && u.email ? ` (${u.email})` : ""}.`
+  } catch {}
+  const partes = [
+    `Hola, necesito ayuda para importar mi cartera de pólizas a SegurOS.${quien}`,
+    motivo ? motivo : "",
+    "¿Me ayudan a subirla? Les puedo enviar el archivo por acá.",
+  ].filter(Boolean)
+  const msg = encodeURIComponent(partes.join(" "))
+  window.open(`https://wa.me/${SOPORTE_WA}?text=${msg}`, "_blank")
+}
+
+// Tarjeta de "lo subimos por vos". `prominente` = variante destacada (cuando falló algo).
+function SoporteCTA({ prominente, detalle, motivo }: { prominente?: boolean; detalle?: string; motivo?: string }) {
+  return (
+    <Card className={`p-4 ${prominente ? "border-emerald-300 bg-emerald-50" : "border-slate-200"}`}>
+      <div className="flex items-start gap-3 flex-wrap sm:flex-nowrap">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+          <LifeBuoy className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-slate-900">¿No se pudo importar? La subimos nosotros</p>
+          <p className="text-sm text-muted-foreground">
+            {detalle || "Mandanos tu archivo de cartera por WhatsApp y nuestro equipo la carga por vos, sin costo."}
+          </p>
+        </div>
+        <Button onClick={() => abrirSoporte(motivo)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 shrink-0">
+          <MessageCircle className="h-4 w-4" /> Soporte por WhatsApp
+        </Button>
+      </div>
+    </Card>
+  )
+}
+
 export default function ImportarPolizasPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -90,6 +132,8 @@ export default function ImportarPolizasPage() {
   const [loading, setLoading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [filtroErrores, setFiltroErrores] = useState<"todos" | "errores" | "warnings">("todos")
+  // Mensaje de error persistente → dispara el panel de soporte (no solo el toast efímero).
+  const [errorImport, setErrorImport] = useState<string | null>(null)
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""
 
@@ -98,6 +142,7 @@ export default function ImportarPolizasPage() {
     if (!f) return
     setFile(f)
     setLoading(true)
+    setErrorImport(null)
     try {
       const r = await polizasAPI.importPreview(token, f)
       setPreview(r)
@@ -106,6 +151,7 @@ export default function ImportarPolizasPage() {
       setStep(2)
     } catch (e: any) {
       toast({ title: "Error al leer el archivo", description: e.message, variant: "destructive" })
+      setErrorImport(`No pudimos leer "${f.name}". ${e.message || ""}`.trim())
     } finally {
       setLoading(false)
     }
@@ -122,6 +168,7 @@ export default function ImportarPolizasPage() {
       setFilas(r.filas)
     } catch (e: any) {
       toast({ title: "Error al aplicar mapeo", description: e.message, variant: "destructive" })
+      setErrorImport(`Hubo un problema al procesar las columnas del archivo. ${e.message || ""}`.trim())
     } finally {
       setLoading(false)
     }
@@ -147,6 +194,7 @@ export default function ImportarPolizasPage() {
       return
     }
     setLoading(true)
+    setErrorImport(null)
     try {
       const r = await polizasAPI.importConfirmar(
         token,
@@ -164,6 +212,7 @@ export default function ImportarPolizasPage() {
       router.push("/admin/seguros/polizas")
     } catch (e: any) {
       toast({ title: "Error al importar", description: e.message, variant: "destructive" })
+      setErrorImport(`La importación no se pudo completar. ${e.message || ""}`.trim())
     } finally {
       setLoading(false)
     }
@@ -244,6 +293,21 @@ export default function ImportarPolizasPage() {
           </div>
         </div>
 
+        {/* Panel de soporte destacado: aparece si la importación falló */}
+        {errorImport && (
+          <div className="space-y-3">
+            <div className="flex items-start gap-3 p-4 rounded-lg border border-red-200 bg-red-50 text-sm">
+              <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-red-800">No se pudo importar</p>
+                <p className="text-red-700">{errorImport}</p>
+                <p className="text-red-700/80 mt-1">No te preocupes: lo cargamos por vos. Escribinos por WhatsApp y mandanos el archivo.</p>
+              </div>
+            </div>
+            <SoporteCTA prominente motivo={`Tuve un problema al importar: ${errorImport}`} />
+          </div>
+        )}
+
         {/* ── PASO 1: Upload ─────────────────────────────────────────── */}
         {step === 1 && (
           <Card className="p-8">
@@ -282,6 +346,9 @@ export default function ImportarPolizasPage() {
                 <li>Si una <strong>aseguradora o ramo</strong> es nuevo, lo agregamos a tu catálogo.</li>
                 <li>Si el medio de pago es <strong>EFECTIVO/CUPON</strong>, generamos la cobranza inicial automáticamente.</li>
               </ul>
+            </div>
+            <div className="mt-4">
+              <SoporteCTA detalle="¿El archivo no se sube, no tenés Excel a mano, o preferís que la carguemos nosotros? Mandanos tu cartera por WhatsApp y la subimos por vos, sin costo." />
             </div>
           </Card>
         )}
@@ -458,6 +525,14 @@ export default function ImportarPolizasPage() {
                 </table>
               </div>
             </Card>
+
+            {/* Si quedan filas con error que el broker no puede corregir, ofrecemos soporte */}
+            {filas.filter(f => f.diagnostico.errores.length > 0).length > 0 && (
+              <SoporteCTA
+                detalle="¿Hay filas con errores que no podés corregir? Mandanos el archivo original por WhatsApp y lo dejamos cargado por vos."
+                motivo="Tengo filas con errores en la importación que no puedo corregir."
+              />
+            )}
 
             <div className="flex justify-between items-center gap-3 flex-wrap">
               <Button variant="outline" onClick={() => setStep(1)} className="gap-2">
