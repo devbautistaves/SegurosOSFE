@@ -6,11 +6,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { whatsappAPI, type WaStatus, type WaMessageLog } from "@/lib/api"
+import { whatsappAPI, type WaStatus, type WaMessageLog, type WaPolizasConfig, type WaPolizaKey } from "@/lib/api"
 import {
   MessageCircle, Smartphone, QrCode, RefreshCw, LogOut, Send,
   CheckCircle2, XCircle, Loader2, ShieldCheck, AlertTriangle, Gauge, History,
+  Zap, BellRing, CalendarClock, AlarmClock,
 } from "lucide-react"
+
+// Avisos de vencimiento de póliza disponibles.
+const AVISOS: { key: WaPolizaKey; icon: any; title: string; desc: string }[] = [
+  { key: "polizaProxima",  icon: BellRing,      title: "Aviso de póliza por vencer", desc: "Recordatorio de renovación unos días antes." },
+  { key: "polizaVenceHoy", icon: CalendarClock, title: "Aviso el día que vence",     desc: "Mensaje el día del vencimiento." },
+  { key: "polizaVencida",  icon: AlarmClock,    title: "Aviso de póliza vencida",    desc: "Recordatorio cuando la póliza queda sin vigencia." },
+]
 
 const ACCENT = "#0E9F6E"
 const INK = "#0f172a"
@@ -44,10 +52,21 @@ export default function WhatsAppPage() {
 
   const [history, setHistory] = useState<WaMessageLog[]>([])
   const [usage, setUsage] = useState<{ enviados: number; limite: number } | null>(null)
+  const [config, setConfig] = useState<WaPolizasConfig | null>(null)
+  const [savingKey, setSavingKey] = useState<WaPolizaKey | null>(null)
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => { setToken(localStorage.getItem("token") || "") }, [])
+
+  const toggleAviso = async (key: WaPolizaKey, enabled: boolean) => {
+    if (!config) return
+    setSavingKey(key)
+    setConfig({ ...config, [key]: { enabled } })
+    try { const r = await whatsappAPI.setConfig(token, { [key]: { enabled } } as any); if (r.ok) setConfig(r.config) }
+    catch { setConfig({ ...config, [key]: { enabled: !enabled } }) }
+    finally { setSavingKey(null) }
+  }
 
   const refresh = useCallback(async (tk: string) => {
     try {
@@ -59,9 +78,10 @@ export default function WhatsAppPage() {
 
   const loadHistory = useCallback(async (tk: string) => {
     try {
-      const [h, u] = await Promise.all([whatsappAPI.history(tk), whatsappAPI.usage(tk)])
+      const [h, u, c] = await Promise.all([whatsappAPI.history(tk), whatsappAPI.usage(tk), whatsappAPI.getConfig(tk)])
       if (h.ok) setHistory(h.items || [])
       if (u.ok) setUsage({ enviados: u.enviados, limite: u.limite })
+      if (c.ok) setConfig(c.config)
     } catch { /* silencioso */ }
   }, [])
 
@@ -207,6 +227,34 @@ export default function WhatsAppPage() {
               </div>
             </div>
 
+            {/* Avisos de póliza automáticos */}
+            <div className="rounded-2xl border bg-white shadow-sm mt-5 px-5 py-5">
+              <div className="flex items-center gap-2 mb-1"><Zap className="h-4 w-4 text-slate-400" /><h2 className="font-bold text-lg" style={{ color: INK }}>Avisos de vencimiento de póliza</h2></div>
+              <p className="text-sm text-slate-500 mb-4">Recordatorios automáticos de renovación a tus asegurados, según la fecha de fin de vigencia.</p>
+              <div className="divide-y">
+                {AVISOS.map((a) => {
+                  const on = !!config?.[a.key]?.enabled
+                  const saving = savingKey === a.key
+                  return (
+                    <div key={a.key} className="flex items-center gap-3 py-3">
+                      <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(14,159,110,.10)" }}>
+                        <a.icon className="h-4.5 w-4.5" style={{ color: ACCENT }} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-slate-700">{a.title}</p>
+                        <p className="text-xs text-slate-500">{a.desc}{a.key === "polizaProxima" && config ? ` (${config.diasProximo} días antes)` : ""}</p>
+                      </div>
+                      <button onClick={() => !saving && toggleAviso(a.key, !on)} disabled={saving} aria-label={a.title}
+                        className="relative h-6 w-11 rounded-full flex-shrink-0 transition-colors" style={{ background: on ? ACCENT : "#cbd5e1" }}>
+                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? "left-[22px]" : "left-0.5"}`} />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Mensaje de prueba */}
             <div className="rounded-2xl border bg-white shadow-sm mt-5 px-5 py-5">
               <div className="flex items-center gap-2 mb-1"><Send className="h-4 w-4 text-slate-400" /><h2 className="font-bold text-lg" style={{ color: INK }}>Mensaje de prueba</h2></div>
               <p className="text-sm text-slate-500 mb-4">Enviá un mensaje a tu propio número para confirmar que todo funciona.</p>

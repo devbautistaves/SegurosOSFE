@@ -942,6 +942,16 @@ export const whatsappAPI = {
     fetchAPI<{ ok: boolean; jid?: string; error?: string }>("/api/whatsapp/test", { method: "POST", token, body: JSON.stringify({ to, text }) }),
   history: (token: string) => fetchAPI<{ ok: boolean; items: WaMessageLog[] }>("/api/whatsapp/history", { token }),
   usage: (token: string) => fetchAPI<{ ok: boolean; enviados: number; limite: number; ventanaSeg: number; resetEnSeg: number }>("/api/whatsapp/usage", { token }),
+  getConfig: (token: string) => fetchAPI<{ ok: boolean; config: WaPolizasConfig }>("/api/whatsapp/config", { token }),
+  setConfig: (token: string, patch: Partial<WaPolizasConfig>) =>
+    fetchAPI<{ ok: boolean; config: WaPolizasConfig }>("/api/whatsapp/config", { method: "PUT", token, body: JSON.stringify(patch) }),
+}
+export type WaPolizaKey = "polizaProxima" | "polizaVenceHoy" | "polizaVencida"
+export interface WaPolizasConfig {
+  polizaProxima: { enabled: boolean }
+  polizaVenceHoy: { enabled: boolean }
+  polizaVencida: { enabled: boolean }
+  diasProximo: number
 }
 
 export const aseguradoraAPI = {
