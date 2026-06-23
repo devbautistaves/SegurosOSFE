@@ -1,15 +1,19 @@
 "use client"
 
-// Legajo público del asegurado — la comparte el PAS por link/QR con su cliente.
-// Diseño "cédula del asegurado": tapa institucional verde (feel de documento),
-// credenciales por vehículo con patente MERCOSUR como signature, bloque de
-// emergencia, bloque "Cómo pagar" (alias/CBU/link que carga el PAS) y cuotas
-// con subida de comprobante. Iconos SVG inline (sin CDN). Identidad propia,
-// distinta a CobrOS, para que el PAS la sienta como su pieza.
+// Legajo público del asegurado — lo comparte el PAS por link/QR con su cliente.
+// Una pieza POR CLIENTE (agrupa sus pólizas y siniestros). Diseño "legajo
+// digital": tapa institucional con el color del productor, y debajo un layout
+// de dos columnas en escritorio — pólizas como tarjetas tipo cédula (todos los
+// datos: compañía, N° póliza, vigencia, medio de pago, riesgo/vehículo) con sus
+// cuotas y siniestros adentro, y una columna lateral con Cómo pagar + teléfonos
+// de las compañías + contacto del productor. Iconos SVG inline (sin CDN).
 
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
-import { legajoAseguradoAPI, LegajoPublico, LegajoCobranza, LegajoPago } from "@/lib/api"
+import {
+  legajoAseguradoAPI, LegajoPublico, LegajoCobranza, LegajoPago,
+  LegajoVehiculo, LegajoSiniestro,
+} from "@/lib/api"
 
 const moneyAR = (n?: number | null) => (n == null ? "" : "$" + Number(n).toLocaleString("es-AR"))
 const dateAR = (d?: string | null, long = false) =>
@@ -18,9 +22,29 @@ const dateAR = (d?: string | null, long = false) =>
     : { day: "2-digit", month: "2-digit", year: "2-digit" }) : ""
 
 const RAMOS_VEHICULO = ["AUTOS", "MOTOS", "REMISES", "TRANSPORTE_CARGAS", "FLOTA_AUTOMOTOR"]
-const labelRamo = (r?: string) => (r || "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
-const labelCompania = (c?: string) => (c || "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+const TITLE = (s?: string) => (s || "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+const labelRamo = TITLE
+const labelCompania = TITLE
 const firstName = (s?: string) => (s || "").trim().split(/\s+/)[0] || ""
+
+const MEDIO_PAGO: Record<string, string> = {
+  TARJ_CRED: "Tarjeta de crédito", CBU: "Débito por CBU", EFECTIVO: "Efectivo",
+  CUPON: "Cupón de pago", OTRO: "Otro medio",
+}
+const ESTADO_POLIZA: Record<string, string> = {
+  VIGENTE: "Vigente", A_RENOVAR: "A renovar", NO_VIGENTE: "No vigente",
+  ANULADA: "Anulada", PENDIENTE_CLIENTE: "Pendiente",
+}
+const TIPO_SINIESTRO: Record<string, string> = {
+  ROBO_TOTAL: "Robo total", ROBO_PARCIAL: "Robo parcial", DAÑO_TOTAL: "Daño total",
+  CHOQUE_ACCIDENTE: "Choque / accidente", CRISTALES: "Cristales", INCENDIO: "Incendio",
+  GRANIZO: "Granizo", OTRO: "Siniestro",
+}
+const ESTADO_SINIESTRO: Record<string, { label: string; tone: string }> = {
+  EN_TRAMITE: { label: "En trámite", tone: "wait" },
+  FINALIZADO: { label: "Finalizado", tone: "ok" },
+  RECHAZADO: { label: "Rechazado", tone: "mora" },
+}
 
 // ── Iconos SVG inline (stroke = currentColor) ─────────────────────────────────
 const P: Record<string, React.ReactNode> = {
@@ -44,6 +68,9 @@ const P: Record<string, React.ReactNode> = {
   camera: <><path d="M4 8h3l1.5-2h7L17 8h3v11H4z" /><circle cx="12" cy="13" r="3.2" /></>,
   folderx: <><path d="M4 7a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" /><path d="M10 11l4 4M14 11l-4 4" /></>,
   arrow: <path d="M12 5v14M6 13l6 6 6-6" />,
+  calendar: <><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M4 9h16M8 3v4M16 3v4" /></>,
+  hash: <path d="M9 4l-1 16M16 4l-1 16M4 9h16M3 15h16" />,
+  triangle: <><path d="M12 4l9 16H3z" /><path d="M12 10v4M12 17v.5" /></>,
 }
 function Ic({ n, s = 20, w = 1.7 }: { n: string; s?: number; w?: number }) {
   return (
@@ -63,6 +90,7 @@ const iconRamo = (r?: string) => {
   if (RAMOS_VEHICULO.some(x => r.includes(x))) return "car"
   return "shield"
 }
+const esVehiculoRamo = (v: LegajoVehiculo) => !!v.patente && RAMOS_VEHICULO.some(r => (v.ramo || "").includes(r))
 
 function estadoChip(p: LegajoPago): { label: string; tone: "ok" | "mora" | "next" | "wait" | "neutral" } {
   if (p.estado === "COBRADA") return { label: "Pagada", tone: "ok" }
@@ -103,12 +131,17 @@ function darken(hex: string, amt = 0.62): string {
   return `rgb(${d(r)},${d(g)},${d(b)})`
 }
 
+type Msg = { key: string; text: string; tone: "ok" | "err" } | null
+
+// Una póliza con sus cobranzas y siniestros ya agrupados.
+type PolizaGroup = { poliza: LegajoVehiculo; cobranzas: LegajoCobranza[]; siniestros: LegajoSiniestro[] }
+
 export default function AseguradoLegajoPage() {
   const { token } = useParams<{ token: string }>()
   const [data, setData] = useState<LegajoPublico | null>(null)
   const [estado, setEstado] = useState<"load" | "ok" | "err">("load")
   const [subiendo, setSubiendo] = useState<string | null>(null)
-  const [msg, setMsg] = useState<{ key: string; text: string; tone: "ok" | "err" } | null>(null)
+  const [msg, setMsg] = useState<Msg>(null)
   const [copiado, setCopiado] = useState<string | null>(null)
 
   useEffect(() => {
@@ -121,8 +154,38 @@ export default function AseguradoLegajoPage() {
   const cover = darken(accent, 0.66)
   const wa = data?.productor?.whatsapp ? String(data.productor.whatsapp).replace(/[^0-9]/g, "") : ""
   const inicial = (data?.productor?.nombre || "P").trim().charAt(0).toUpperCase()
-  const companias = useMemo(() => (data?.companias || []).filter(c => c.telefonoAuxilio || c.telefonoSiniestros), [data])
+  const companias = useMemo(() => (data?.companias || []).filter(c => c.telefonoAuxilio || c.telefonoSiniestros || c.appUrl || c.sitioWeb), [data])
   const pago = data?.productor?.datosCobro || null
+
+  // Agrupamos por póliza: cada póliza junta sus cobranzas (por polizaId) y sus
+  // siniestros (por polizaId o por numPoliza). Lo que no matchea va a "sueltos".
+  const { grupos, cobranzasSueltas, siniestrosSueltos } = useMemo(() => {
+    const polizas = data?.vehiculos || []
+    const cobr = data?.cuentaCorriente || []
+    const sin = data?.siniestros || []
+    const usadasCob = new Set<string>(), usadosSin = new Set<string>()
+    const grupos: PolizaGroup[] = polizas.map(p => {
+      const cobranzas = cobr.filter(c => c.polizaId && c.polizaId === p._id)
+      cobranzas.forEach(c => usadasCob.add(c._id))
+      const siniestros = sin.filter(s =>
+        (s.polizaId && s.polizaId === p._id) ||
+        (!!s.numPoliza && !!p.numPoliza && s.numPoliza === p.numPoliza))
+      siniestros.forEach(s => usadosSin.add(s._id))
+      return { poliza: p, cobranzas, siniestros }
+    })
+    return {
+      grupos,
+      cobranzasSueltas: cobr.filter(c => !usadasCob.has(c._id)),
+      siniestrosSueltos: sin.filter(s => !usadosSin.has(s._id)),
+    }
+  }, [data])
+
+  // Resumen para la tapa.
+  const resumen = useMemo(() => {
+    const total = data?.vehiculos?.length || 0
+    const vigentes = (data?.vehiculos || []).filter(v => v.estado === "VIGENTE").length
+    return { total, vigentes }
+  }, [data])
 
   // Próxima acción: la primera cuota impaga de todas las cobranzas.
   const pendiente = useMemo(() => {
@@ -154,7 +217,7 @@ export default function AseguradoLegajoPage() {
     <main className="leg-root">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-        .leg-root{ --acc:${accent}; --cover:${cover}; --paper:#FBF8F1; --surf:#FFFFFF; --ink:#13201A; --muted:#5E6B63;
+        .leg-root{ --acc:${accent}; --cover:${cover}; --paper:#F6F3EB; --surf:#FFFFFF; --ink:#13201A; --muted:#5E6B63;
           --line:#E7E2D4; --mora:#C8503A; --gold:#C99526;
           background:var(--paper); color:var(--ink); min-height:100vh;
           font-family:'Manrope',ui-sans-serif,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
@@ -162,21 +225,33 @@ export default function AseguradoLegajoPage() {
         .leg-display{ font-family:'Bricolage Grotesque','Manrope',sans-serif; font-weight:600; letter-spacing:-.015em; }
         .leg-eye{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
         /* Tapa institucional */
-        .leg-cover{ background:linear-gradient(165deg, var(--acc), var(--cover)); color:#fff; padding:26px 0 86px;
+        .leg-cover{ background:linear-gradient(165deg, var(--acc), var(--cover)); color:#fff; padding:30px 0 96px;
           position:relative; overflow:hidden; }
         .leg-cover::after{ content:""; position:absolute; inset:0; opacity:.10;
           background-image:radial-gradient(circle at 1px 1px, #fff 1px, transparent 0); background-size:22px 22px; }
-        .leg-wrap{ max-width:680px; margin:0 auto; padding:0 18px; }
+        .leg-wrap{ max-width:1060px; margin:0 auto; padding:0 20px; position:relative; }
+        .leg-grid{ display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+        @media(min-width:940px){
+          .leg-grid{ grid-template-columns:minmax(0,1fr) 340px; align-items:start; }
+          .leg-side{ position:sticky; top:18px; display:grid; gap:14px; }
+        }
         .leg-card{ background:var(--surf); border:1px solid var(--line); border-radius:16px; box-shadow:0 1px 2px rgba(19,32,26,.04); }
-        .leg-sec-t{ display:flex; align-items:center; gap:8px; margin:26px 6px 12px; }
-        .leg-cred{ background:var(--surf); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
-        .leg-cred-top{ height:5px; background:var(--acc); }
+        .leg-sec-t{ display:flex; align-items:center; gap:9px; margin:4px 4px 14px; }
+        .leg-pol{ background:var(--surf); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 6px 22px -16px rgba(19,32,26,.4); }
+        .leg-pol-top{ height:5px; background:linear-gradient(90deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#000)); }
         .leg-patente{ background:#fff; color:#13201A; border:2px solid #13201A; border-radius:7px;
           padding:21px 18px 11px; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:25px;
           letter-spacing:.2em; display:inline-block; position:relative; line-height:1; box-shadow:0 3px 0 rgba(0,0,0,.08); }
         .leg-patente::before{ content:"ⓂERCOSUR · ARGENTINA"; position:absolute; top:0; left:0; right:0;
           background:#0B3D91; color:#fff; font-size:8.5px; letter-spacing:.18em; text-align:center; padding:3px 6px;
           font-family:'IBM Plex Mono',monospace; border-radius:5px 5px 0 0; }
+        /* Cuadro de datos tipo cédula */
+        .leg-dl{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line);
+          border:1px solid var(--line); border-radius:13px; overflow:hidden; }
+        @media(max-width:540px){ .leg-dl{ grid-template-columns:1fr; } }
+        .leg-dl .cell{ background:var(--surf); padding:11px 14px; min-width:0; }
+        .leg-dl .cell.wide{ grid-column:1 / -1; }
+        .leg-dl .cell .v{ font-size:14px; font-weight:600; color:var(--ink); margin-top:3px; word-break:break-word; }
         .leg-stamp{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
           padding:5px 10px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; font-weight:600; }
         .leg-btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 18px; border-radius:11px;
@@ -186,18 +261,19 @@ export default function AseguradoLegajoPage() {
         .leg-btn-primary{ background:var(--acc); color:#fff; }
         .leg-btn-primary:hover{ filter:brightness(1.06); }
         .leg-btn-ghost{ background:var(--surf); color:var(--ink); border-color:var(--line); }
-        .leg-mark{ width:46px; height:46px; border-radius:12px; background:rgba(255,255,255,.16); color:#fff;
-          display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',serif; font-weight:700; font-size:20px; flex-shrink:0; border:1px solid rgba(255,255,255,.25); }
+        .leg-mark{ width:48px; height:48px; border-radius:13px; background:rgba(255,255,255,.16); color:#fff;
+          display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',serif; font-weight:700; font-size:21px; flex-shrink:0; border:1px solid rgba(255,255,255,.25); }
         .leg-iconbox{ width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .leg-row{ display:flex; align-items:center; gap:12px; padding:13px 14px; background:var(--paper); border:1px solid var(--line); border-radius:12px; }
         .leg-copy{ background:transparent; border:0; cursor:pointer; color:var(--muted); display:inline-flex; padding:6px; border-radius:8px; }
         .leg-copy:hover{ background:rgba(0,0,0,.04); color:var(--ink); }
-        .leg-cuota{ display:flex; gap:12px; align-items:flex-start; padding:15px 16px; border-top:1px solid var(--line); }
-        .leg-cuota:first-of-type{ border-top:0; }
-        .leg-drop{ background:var(--paper); border:1.5px dashed var(--acc); border-radius:12px; padding:12px 16px; text-align:center; cursor:pointer; display:inline-flex; align-items:center; gap:8px; color:var(--acc); font-weight:600; font-size:13px; }
+        .leg-sub{ display:flex; align-items:center; gap:7px; margin:18px 0 10px; font-size:11px; }
+        .leg-cuota{ display:flex; gap:12px; align-items:flex-start; padding:14px 0; border-top:1px solid var(--line); }
+        .leg-drop{ background:var(--paper); border:1.5px dashed var(--acc); border-radius:12px; padding:11px 15px; text-align:center; cursor:pointer; display:inline-flex; align-items:center; gap:8px; color:var(--acc); font-weight:600; font-size:13px; }
         .leg-drop input{ display:none; }
         .leg-msg-ok{ background:#E2F4ED; color:#0A5440; border:1px solid #1C8C6C; }
         .leg-msg-err{ background:#FBEAE7; color:#8C2A18; border:1px solid #C8503A; }
+        .leg-sin{ display:flex; gap:12px; align-items:flex-start; padding:13px; background:var(--paper); border:1px solid var(--line); border-radius:12px; }
         @keyframes legPop{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
         .leg-pop{ animation:legPop .5s cubic-bezier(.2,.7,.2,1) both; }
         @media (prefers-reduced-motion: reduce){ .leg-pop{ animation:none } }
@@ -209,7 +285,7 @@ export default function AseguradoLegajoPage() {
 
       {estado === "err" && (
         <div className="leg-wrap">
-          <div className="leg-card" style={{ padding: 30, textAlign: "center", marginTop: 90 }}>
+          <div className="leg-card" style={{ padding: 30, textAlign: "center", marginTop: 90, maxWidth: 460, marginInline: "auto" }}>
             <span style={{ color: "var(--muted)", display: "inline-flex" }}><Ic n="folderx" s={34} /></span>
             <p className="leg-display" style={{ fontSize: 21, margin: "12px 0 4px" }}>No encontramos este legajo</p>
             <p style={{ fontSize: 13.5, color: "var(--muted)" }}>El link puede haber cambiado. Pedile a tu productor uno nuevo.</p>
@@ -225,179 +301,195 @@ export default function AseguradoLegajoPage() {
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 {data.productor.logo
                   /* eslint-disable-next-line @next/next/no-img-element */
-                  ? <img src={data.productor.logo} alt="" style={{ height: 46, width: 46, objectFit: "contain", background: "#fff", borderRadius: 12, padding: 4 }} />
+                  ? <img src={data.productor.logo} alt="" style={{ height: 48, width: 48, objectFit: "contain", background: "#fff", borderRadius: 13, padding: 4 }} />
                   : <span className="leg-mark">{inicial}</span>}
                 <div>
                   <p className="leg-display" style={{ margin: 0, fontSize: 16, lineHeight: 1.1, color: "#fff" }}>{data.productor.nombre}</p>
                   <p className="leg-eye" style={{ marginTop: 4, color: "rgba(255,255,255,.72)" }}>Productor de seguros</p>
                 </div>
               </div>
-              <p className="leg-eye" style={{ color: "rgba(255,255,255,.7)", marginTop: 26 }}>Legajo digital</p>
-              <p className="leg-display" style={{ margin: "8px 0 0", fontSize: 30, lineHeight: 1.05, color: "#fff" }}>
+              <p className="leg-eye" style={{ color: "rgba(255,255,255,.7)", marginTop: 30 }}>Legajo digital del asegurado</p>
+              <p className="leg-display" style={{ margin: "8px 0 0", fontSize: 32, lineHeight: 1.05, color: "#fff" }}>
                 Hola, {firstName(data.cliente.nombreApellido) || "—"}
               </p>
-              <p style={{ margin: "10px 0 0", fontSize: 14, color: "rgba(255,255,255,.82)", lineHeight: 1.5, maxWidth: 440 }}>
-                Acá tenés todo tu seguro en un solo lugar: tus coberturas, los teléfonos para una emergencia y tus cuotas.
+              <p style={{ margin: "10px 0 0", fontSize: 14.5, color: "rgba(255,255,255,.85)", lineHeight: 1.5, maxWidth: 560 }}>
+                Acá tenés tus pólizas a mano: los datos de cada cobertura, el estado de tus cuotas y el seguimiento de tus siniestros.
               </p>
+              {resumen.total > 0 && (
+                <div style={{ display: "flex", gap: 22, marginTop: 22, flexWrap: "wrap" }}>
+                  <Stat n={resumen.total} label={resumen.total === 1 ? "Póliza" : "Pólizas"} />
+                  <Stat n={resumen.vigentes} label="Vigentes" />
+                  {(data.siniestros?.length || 0) > 0 && <Stat n={data.siniestros.length} label={data.siniestros.length === 1 ? "Siniestro" : "Siniestros"} />}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="leg-wrap" style={{ paddingBottom: 90, marginTop: -64 }}>
-            {/* ── Próxima acción (si hay cuota impaga) ── */}
-            {pendiente && (
-              <a href="#cuotas" className="leg-card leg-pop" style={{ display: "block", textDecoration: "none", color: "inherit", padding: 16, marginBottom: 14, borderLeft: `4px solid ${pendiente.vencida ? "var(--mora)" : "var(--gold)"}` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-                  <span className="leg-iconbox" style={{ background: pendiente.vencida ? "#FBEAE7" : "#FBF0DC", color: pendiente.vencida ? "var(--mora)" : "var(--gold)" }}>
-                    <Ic n={pendiente.vencida ? "alert" : "receipt"} s={22} />
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p className="leg-display" style={{ margin: 0, fontSize: 15.5 }}>
-                      {pendiente.vencida ? "Tenés una cuota vencida" : "Tu próxima cuota"}
-                    </p>
-                    <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--muted)" }}>
-                      {pendiente.pago.mesLabel || pendiente.pago.mes}
-                      {pendiente.pago.monto != null ? <> · <span className="leg-mono" style={{ fontWeight: 600, color: "var(--ink)" }}>{moneyAR(pendiente.pago.monto)}</span></> : null}
-                      {" · tocá para pagar"}
-                    </p>
+          <div className="leg-wrap" style={{ paddingBottom: 80, marginTop: -68 }}>
+            <div className="leg-grid">
+              {/* ── Columna principal ── */}
+              <div style={{ minWidth: 0 }}>
+                {/* Próxima acción */}
+                {pendiente && (
+                  <a href="#cuotas" className="leg-card leg-pop" style={{ display: "block", textDecoration: "none", color: "inherit", padding: 16, marginBottom: 16, borderLeft: `4px solid ${pendiente.vencida ? "var(--mora)" : "var(--gold)"}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+                      <span className="leg-iconbox" style={{ background: pendiente.vencida ? "#FBEAE7" : "#FBF0DC", color: pendiente.vencida ? "var(--mora)" : "var(--gold)" }}>
+                        <Ic n={pendiente.vencida ? "alert" : "receipt"} s={22} />
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p className="leg-display" style={{ margin: 0, fontSize: 15.5 }}>
+                          {pendiente.vencida ? "Tenés una cuota vencida" : "Tu próxima cuota"}
+                        </p>
+                        <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--muted)" }}>
+                          {pendiente.pago.mesLabel || pendiente.pago.mes}
+                          {pendiente.pago.monto != null ? <> · <span className="leg-mono" style={{ fontWeight: 600, color: "var(--ink)" }}>{moneyAR(pendiente.pago.monto)}</span></> : null}
+                          {" · tocá para verla"}
+                        </p>
+                      </div>
+                      <span style={{ color: "var(--muted)" }}><Ic n="arrow" s={18} /></span>
+                    </div>
+                  </a>
+                )}
+
+                {/* Pólizas */}
+                {grupos.length > 0 && (
+                  <>
+                    <div className="leg-sec-t"><span style={{ color: "var(--acc)" }}><Ic n="shield" s={18} /></span><p className="leg-display" style={{ margin: 0, fontSize: 16 }}>Tus pólizas</p></div>
+                    <div id="cuotas" style={{ display: "grid", gap: 16 }}>
+                      {grupos.map(g => (
+                        <PolizaCard key={g.poliza._id} grupo={g} accent={accent}
+                          onUpload={handleUpload} subiendoKey={subiendo} msg={msg} copiado={copiado} copiar={copiar} />
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Cobranzas sin póliza asociada */}
+                {cobranzasSueltas.length > 0 && (
+                  <>
+                    <div className="leg-sec-t" style={{ marginTop: 24 }}><span style={{ color: "var(--acc)" }}><Ic n="receipt" s={18} /></span><p className="leg-display" style={{ margin: 0, fontSize: 16 }}>Otras cuotas</p></div>
+                    <div style={{ display: "grid", gap: 14 }}>
+                      {cobranzasSueltas.map(cob => (
+                        <div key={cob._id} className="leg-pol leg-pop" style={{ padding: 18 }}>
+                          <p className="leg-display" style={{ margin: "0 0 4px", fontSize: 15 }}>{labelCompania(cob.aseguradora) || "Cobranza"}{cob.patente ? " · " + cob.patente : ""}</p>
+                          <CuotasList cob={cob} onUpload={handleUpload} subiendoKey={subiendo} msg={msg} />
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Siniestros sin póliza asociada */}
+                {siniestrosSueltos.length > 0 && (
+                  <>
+                    <div className="leg-sec-t" style={{ marginTop: 24 }}><span style={{ color: "var(--mora)" }}><Ic n="triangle" s={18} /></span><p className="leg-display" style={{ margin: 0, fontSize: 16 }}>Otros siniestros</p></div>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {siniestrosSueltos.map(s => <SiniestroRow key={s._id} s={s} />)}
+                    </div>
+                  </>
+                )}
+
+                {grupos.length === 0 && cobranzasSueltas.length === 0 && (
+                  <div className="leg-card" style={{ padding: 26, textAlign: "center" }}>
+                    <span style={{ color: "var(--muted)", display: "inline-flex" }}><Ic n="shield" s={30} /></span>
+                    <p className="leg-display" style={{ fontSize: 17, margin: "10px 0 4px" }}>Todavía no hay pólizas cargadas</p>
+                    <p style={{ fontSize: 13, color: "var(--muted)", margin: 0 }}>Cuando tu productor cargue tus coberturas, las vas a ver acá.</p>
                   </div>
-                  <span style={{ color: "var(--muted)" }}><Ic n="arrow" s={18} /></span>
-                </div>
-              </a>
-            )}
+                )}
+              </div>
 
-            {/* ── Cómo pagar ── */}
-            {pago && (
-              <section className="leg-card leg-pop" style={{ padding: 18, marginBottom: 14 }}>
-                <div className="leg-sec-t" style={{ margin: "0 0 14px" }}>
-                  <span style={{ color: "var(--acc)" }}><Ic n="card" s={18} /></span>
-                  <p className="leg-display" style={{ margin: 0, fontSize: 15 }}>Cómo pagar</p>
-                </div>
-                <div style={{ display: "grid", gap: 9 }}>
-                  {pago.alias && (
-                    <div className="leg-row">
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p className="leg-eye" style={{ marginBottom: 3 }}>Alias</p>
-                        <p className="leg-mono" style={{ margin: 0, fontSize: 16, fontWeight: 600, wordBreak: "break-all" }}>{pago.alias}</p>
-                      </div>
-                      <button className="leg-copy" onClick={() => copiar("alias", pago.alias!)} title="Copiar alias">
-                        <Ic n={copiado === "alias" ? "check" : "copy"} s={18} />
-                      </button>
+              {/* ── Columna lateral ── */}
+              <aside className="leg-side">
+                {/* Cómo pagar */}
+                {pago && (
+                  <section className="leg-card leg-pop" style={{ padding: 18 }}>
+                    <div className="leg-sec-t" style={{ margin: "0 0 14px" }}>
+                      <span style={{ color: "var(--acc)" }}><Ic n="card" s={18} /></span>
+                      <p className="leg-display" style={{ margin: 0, fontSize: 15 }}>Cómo pagar</p>
                     </div>
-                  )}
-                  {pago.cbu && (
-                    <div className="leg-row">
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p className="leg-eye" style={{ marginBottom: 3 }}>CBU / CVU</p>
-                        <p className="leg-mono" style={{ margin: 0, fontSize: 14.5, fontWeight: 600, wordBreak: "break-all" }}>{pago.cbu}</p>
-                      </div>
-                      <button className="leg-copy" onClick={() => copiar("cbu", pago.cbu!)} title="Copiar CBU">
-                        <Ic n={copiado === "cbu" ? "check" : "copy"} s={18} />
-                      </button>
-                    </div>
-                  )}
-                  {(pago.titular || pago.banco) && (
-                    <p style={{ margin: "2px 2px 0", fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}>
-                      <Ic n="bank" s={14} />
-                      {[pago.titular, pago.banco].filter(Boolean).join(" · ")}
-                    </p>
-                  )}
-                  {pago.linkPago && (
-                    <a href={pago.linkPago} target="_blank" rel="noreferrer" className="leg-btn leg-btn-primary" style={{ marginTop: 4 }}>
-                      <Ic n="card" s={17} /> Pagar ahora
-                    </a>
-                  )}
-                  {pago.nota && (
-                    <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--muted)", background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px", lineHeight: 1.5 }}>
-                      {pago.nota}
-                    </p>
-                  )}
-                </div>
-              </section>
-            )}
-
-            {/* ── Emergencia ── */}
-            {companias.length > 0 && (
-              <section className="leg-card leg-pop" style={{ padding: 18, marginBottom: 14 }}>
-                <div className="leg-sec-t" style={{ margin: "0 0 4px" }}>
-                  <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--mora)", flexShrink: 0 }} />
-                  <p className="leg-display" style={{ margin: 0, fontSize: 15 }}>Si te pasa algo, ahora</p>
-                </div>
-                {companias.map((c, i) => (
-                  <div key={i} style={{ padding: "12px 0 4px", borderTop: i === 0 ? 0 : "1px solid var(--line)", marginTop: i === 0 ? 8 : 0 }}>
-                    <p className="leg-display" style={{ margin: "0 0 2px", fontSize: 13.5 }}>{labelCompania(c.nombre)}</p>
-                    {c.notasDelPAS && <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--muted)", lineHeight: 1.45 }}>{c.notasDelPAS}</p>}
-                    <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-                      {c.telefonoAuxilio && <TelRow label="Auxilio en ruta" tel={c.telefonoAuxilio} accent={accent} />}
-                      {c.telefonoSiniestros && <TelRow label="Tuviste un choque" tel={c.telefonoSiniestros} accent={accent} />}
-                      {(c.appUrl || c.sitioWeb) && (
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {c.appUrl && <a href={c.appUrl} target="_blank" rel="noreferrer" className="leg-btn leg-btn-ghost" style={{ flex: 1, fontSize: 12.5, padding: "10px 12px" }}><Ic n="mobile" s={15} /> App</a>}
-                          {c.sitioWeb && <a href={c.sitioWeb} target="_blank" rel="noreferrer" className="leg-btn leg-btn-ghost" style={{ flex: 1, fontSize: 12.5, padding: "10px 12px" }}><Ic n="world" s={15} /> Sitio web</a>}
+                    <div style={{ display: "grid", gap: 9 }}>
+                      {pago.alias && (
+                        <div className="leg-row">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p className="leg-eye" style={{ marginBottom: 3 }}>Alias</p>
+                            <p className="leg-mono" style={{ margin: 0, fontSize: 16, fontWeight: 600, wordBreak: "break-all" }}>{pago.alias}</p>
+                          </div>
+                          <button className="leg-copy" onClick={() => copiar("alias", pago.alias!)} title="Copiar alias">
+                            <Ic n={copiado === "alias" ? "check" : "copy"} s={18} />
+                          </button>
                         </div>
                       )}
-                    </div>
-                  </div>
-                ))}
-              </section>
-            )}
-
-            {/* ── Coberturas ── */}
-            {data.vehiculos.length > 0 && (
-              <>
-                <div className="leg-sec-t"><span style={{ color: "var(--acc)" }}><Ic n="shield" s={17} /></span><p className="leg-display" style={{ margin: 0, fontSize: 15 }}>Tus coberturas</p></div>
-                {data.vehiculos.map(v => {
-                  const esVehiculo = !!v.patente && RAMOS_VEHICULO.some(r => (v.ramo || "").includes(r))
-                  const vigente = v.estado === "VIGENTE"
-                  const tone = vigente ? "ok" : v.estado === "ANULADA" ? "neutral" : "next"
-                  return (
-                    <div key={v._id} className="leg-cred leg-pop" style={{ marginBottom: 12 }}>
-                      <div className="leg-cred-top" />
-                      <div style={{ padding: 18 }}>
-                        <div style={{ display: "flex", gap: 13, alignItems: "flex-start" }}>
-                          <span className="leg-iconbox" style={{ background: `color-mix(in srgb, ${accent} 12%, #fff)`, color: accent }}><Ic n={iconRamo(v.ramo)} s={23} /></span>
+                      {pago.cbu && (
+                        <div className="leg-row">
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p className="leg-display" style={{ margin: 0, fontSize: 16.5, lineHeight: 1.2 }}>{v.datosRiesgo || labelRamo(v.ramo) || "Cobertura"}</p>
-                            <p style={{ margin: "3px 0 0", fontSize: 12.5, color: "var(--muted)" }}>
-                              {labelCompania(v.aseguradora)}{v.tipoCobertura ? " · " + v.tipoCobertura : ""}
-                            </p>
+                            <p className="leg-eye" style={{ marginBottom: 3 }}>CBU / CVU</p>
+                            <p className="leg-mono" style={{ margin: 0, fontSize: 14.5, fontWeight: 600, wordBreak: "break-all" }}>{pago.cbu}</p>
                           </div>
-                          {v.numPoliza && <span className="leg-mono" style={{ fontSize: 10.5, color: "var(--muted)", whiteSpace: "nowrap" }}>N° {v.numPoliza}</span>}
+                          <button className="leg-copy" onClick={() => copiar("cbu", pago.cbu!)} title="Copiar CBU">
+                            <Ic n={copiado === "cbu" ? "check" : "copy"} s={18} />
+                          </button>
                         </div>
-                        {esVehiculo && (
-                          <div style={{ textAlign: "center", margin: "18px 0 8px" }}><span className="leg-patente">{v.patente}</span></div>
-                        )}
-                        <div style={{ marginTop: 16 }}>
-                          <span className="leg-stamp" style={TONES[tone]}>
-                            {vigente && <Ic n="check" s={13} w={2.4} />}
-                            {vigente ? `Vigente · ${dateAR(v.fechaFinVig)}` : v.estado === "ANULADA" ? "Anulada" : `${labelRamo(v.estado) || "—"}${v.fechaFinVig ? " · " + dateAR(v.fechaFinVig) : ""}`}
-                          </span>
+                      )}
+                      {(pago.titular || pago.banco) && (
+                        <p style={{ margin: "2px 2px 0", fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}>
+                          <Ic n="bank" s={14} />
+                          {[pago.titular, pago.banco].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
+                      {pago.linkPago && (
+                        <a href={pago.linkPago} target="_blank" rel="noreferrer" className="leg-btn leg-btn-primary" style={{ marginTop: 4 }}>
+                          <Ic n="card" s={17} /> Pagar ahora
+                        </a>
+                      )}
+                      {pago.nota && (
+                        <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--muted)", background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px", lineHeight: 1.5 }}>
+                          {pago.nota}
+                        </p>
+                      )}
+                    </div>
+                  </section>
+                )}
+
+                {/* Teléfonos de las compañías */}
+                {companias.length > 0 && (
+                  <section className="leg-card leg-pop" style={{ padding: 18 }}>
+                    <div className="leg-sec-t" style={{ margin: "0 0 4px" }}>
+                      <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--mora)", flexShrink: 0 }} />
+                      <p className="leg-display" style={{ margin: 0, fontSize: 15 }}>Teléfonos de tus compañías</p>
+                    </div>
+                    {companias.map((c, i) => (
+                      <div key={i} style={{ padding: "12px 0 4px", borderTop: i === 0 ? 0 : "1px solid var(--line)", marginTop: i === 0 ? 8 : 0 }}>
+                        <p className="leg-display" style={{ margin: "0 0 2px", fontSize: 13.5 }}>{labelCompania(c.nombre)}</p>
+                        {c.notasDelPAS && <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--muted)", lineHeight: 1.45 }}>{c.notasDelPAS}</p>}
+                        <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                          {c.telefonoAuxilio && <TelRow label="Auxilio en ruta" tel={c.telefonoAuxilio} accent={accent} />}
+                          {c.telefonoSiniestros && <TelRow label="Denunciar un siniestro" tel={c.telefonoSiniestros} accent={accent} />}
+                          {(c.appUrl || c.sitioWeb) && (
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              {c.appUrl && <a href={c.appUrl} target="_blank" rel="noreferrer" className="leg-btn leg-btn-ghost" style={{ flex: 1, fontSize: 12.5, padding: "10px 12px" }}><Ic n="mobile" s={15} /> App</a>}
+                              {c.sitioWeb && <a href={c.sitioWeb} target="_blank" rel="noreferrer" className="leg-btn leg-btn-ghost" style={{ flex: 1, fontSize: 12.5, padding: "10px 12px" }}><Ic n="world" s={15} /> Sitio web</a>}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </>
-            )}
+                    ))}
+                  </section>
+                )}
 
-            {/* ── Cuotas ── */}
-            {data.cuentaCorriente.length > 0 && (
-              <div id="cuotas">
-                <div className="leg-sec-t"><span style={{ color: "var(--acc)" }}><Ic n="receipt" s={17} /></span><p className="leg-display" style={{ margin: 0, fontSize: 15 }}>Tus cuotas</p></div>
-                {data.cuentaCorriente.map(cob => (
-                  <CobranzaCard key={cob._id} cob={cob} accent={accent} onUpload={handleUpload} subiendoKey={subiendo} msg={msg} />
-                ))}
-              </div>
-            )}
+                {/* Contacto del productor */}
+                {wa && (
+                  <section className="leg-card leg-pop" style={{ padding: 18 }}>
+                    <p className="leg-display" style={{ margin: "0 0 4px", fontSize: 15 }}>¿Una duda?</p>
+                    <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>Escribile directo a {firstName(data.productor.nombre)} y te da una mano.</p>
+                    <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className="leg-btn" style={{ background: "#25D366", color: "#fff", width: "100%" }}>
+                      <Ic n="whatsapp" s={18} /> Escribir por WhatsApp
+                    </a>
+                  </section>
+                )}
+              </aside>
+            </div>
 
-            {wa && (
-              <div style={{ marginTop: 26, textAlign: "center" }}>
-                <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className="leg-btn" style={{ background: "#25D366", color: "#fff" }}>
-                  <Ic n="whatsapp" s={18} /> Escribirle a {firstName(data.productor.nombre)}
-                </a>
-              </div>
-            )}
-
-            <p style={{ textAlign: "center", margin: "30px 0 4px", fontSize: 11.5, color: "var(--muted)" }}>
+            <p style={{ textAlign: "center", margin: "34px 0 4px", fontSize: 11.5, color: "var(--muted)" }}>
               Tu legajo lo lleva <strong>{data.productor.nombre}</strong> con <strong>SegurOS</strong>
             </p>
           </div>
@@ -407,10 +499,195 @@ export default function AseguradoLegajoPage() {
   )
 }
 
+function Stat({ n, label }: { n: number; label: string }) {
+  return (
+    <div>
+      <p className="leg-display" style={{ margin: 0, fontSize: 26, lineHeight: 1, color: "#fff" }}>{n}</p>
+      <p className="leg-eye" style={{ marginTop: 5, color: "rgba(255,255,255,.72)" }}>{label}</p>
+    </div>
+  )
+}
+
+function Campo({ label, value, mono, wide }: { label: string; value?: React.ReactNode; mono?: boolean; wide?: boolean }) {
+  if (value == null || value === "") return null
+  return (
+    <div className={"cell" + (wide ? " wide" : "")}>
+      <span className="leg-eye">{label}</span>
+      <p className={"v" + (mono ? " leg-mono" : "")} style={{ margin: 0 }}>{value}</p>
+    </div>
+  )
+}
+
+function PolizaCard({
+  grupo, accent, onUpload, subiendoKey, msg, copiado, copiar,
+}: {
+  grupo: PolizaGroup; accent: string
+  onUpload: (cobranzaId: string, mes: string, file: File) => Promise<void>
+  subiendoKey: string | null; msg: Msg
+  copiado: string | null; copiar: (label: string, value: string) => void
+}) {
+  const v = grupo.poliza
+  const vigente = v.estado === "VIGENTE"
+  const tone = vigente ? "ok" : v.estado === "ANULADA" || v.estado === "NO_VIGENTE" ? "neutral" : "next"
+  const titulo = v.datosRiesgo || labelRamo(v.ramo) || "Cobertura"
+  const esVehiculo = esVehiculoRamo(v)
+
+  return (
+    <div className="leg-pol leg-pop">
+      <div className="leg-pol-top" />
+      <div style={{ padding: 20 }}>
+        {/* Encabezado */}
+        <div style={{ display: "flex", gap: 13, alignItems: "flex-start" }}>
+          <span className="leg-iconbox" style={{ background: `color-mix(in srgb, ${accent} 12%, #fff)`, color: accent }}><Ic n={iconRamo(v.ramo)} s={24} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p className="leg-display" style={{ margin: 0, fontSize: 18, lineHeight: 1.2 }}>{titulo}</p>
+            <p style={{ margin: "3px 0 0", fontSize: 12.5, color: "var(--muted)" }}>
+              {labelCompania(v.aseguradora)}{v.tipoCobertura ? " · " + v.tipoCobertura : ""}
+            </p>
+          </div>
+          <span className="leg-stamp" style={TONES[tone]}>
+            {vigente && <Ic n="check" s={13} w={2.4} />}
+            {ESTADO_POLIZA[v.estado || ""] || labelRamo(v.estado) || "—"}
+          </span>
+        </div>
+
+        {/* Patente MERCOSUR */}
+        {esVehiculo && (
+          <div style={{ textAlign: "center", margin: "20px 0 6px" }}><span className="leg-patente">{v.patente}</span></div>
+        )}
+
+        {/* Cuadro de datos tipo cédula */}
+        <div className="leg-dl" style={{ marginTop: esVehiculo ? 14 : 16 }}>
+          <Campo label="Compañía" value={labelCompania(v.aseguradora)} />
+          <Campo label="N° de póliza" value={v.numPoliza} mono />
+          <Campo label="Ramo" value={labelRamo(v.ramo)} />
+          <Campo label="Cobertura" value={v.tipoCobertura} />
+          <Campo label="Medio de pago" value={v.medioDePago ? (MEDIO_PAGO[v.medioDePago] || labelRamo(v.medioDePago)) : ""} />
+          {!esVehiculo && <Campo label="Patente / Bien" value={v.patente} mono />}
+          <Campo label="Vigencia desde" value={dateAR(v.fechaInicVig)} mono />
+          <Campo label="Vigencia hasta" value={dateAR(v.fechaFinVig)} mono />
+          <Campo label="N° de chasis" value={v.chasis} mono />
+          <Campo label="N° de motor" value={v.motor} mono />
+          {v.gnc && <Campo label="GNC" value="Sí" />}
+          {(v.domicilio || v.localidad) && <Campo label="Domicilio del riesgo" value={[v.domicilio, v.localidad].filter(Boolean).join(" · ")} wide />}
+          {v.datosRiesgo && v.datosRiesgo !== titulo && <Campo label="Datos del riesgo" value={v.datosRiesgo} wide />}
+        </div>
+
+        {/* Cuotas */}
+        {grupo.cobranzas.length > 0 && (
+          <>
+            <div className="leg-sub leg-eye"><Ic n="receipt" s={14} /> Cuotas</div>
+            {grupo.cobranzas.map(cob => (
+              <CuotasList key={cob._id} cob={cob} onUpload={onUpload} subiendoKey={subiendoKey} msg={msg} />
+            ))}
+          </>
+        )}
+
+        {/* Siniestros */}
+        {grupo.siniestros.length > 0 && (
+          <>
+            <div className="leg-sub leg-eye" style={{ color: "var(--mora)" }}><Ic n="triangle" s={14} /> Siniestros</div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {grupo.siniestros.map(s => <SiniestroRow key={s._id} s={s} />)}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CuotasList({
+  cob, onUpload, subiendoKey, msg,
+}: {
+  cob: LegajoCobranza
+  onUpload: (cobranzaId: string, mes: string, file: File) => Promise<void>
+  subiendoKey: string | null; msg: Msg
+}) {
+  const pagadas = cob.pagos.filter(p => p.estado === "COBRADA").length
+  const total = cob.numeroCuotasTotal || cob.pagos.length
+  const proxIdx = cob.pagos.findIndex(p => p.estado !== "COBRADA" && p.estado !== "NO_CORRESPONDE" && p.estado !== "ANULADA")
+  const [abierto, setAbierto] = useState(proxIdx >= 0)
+
+  return (
+    <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 13, padding: "4px 16px" }}>
+      <button onClick={() => setAbierto(v => !v)} style={{ width: "100%", textAlign: "left", padding: "12px 0", background: "transparent", border: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 11, color: "inherit" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <span style={{ position: "relative", width: 70, height: 5, borderRadius: 3, background: "var(--line)", overflow: "hidden", flexShrink: 0 }}>
+              <span style={{ position: "absolute", inset: 0, width: `${total ? (pagadas / total) * 100 : 0}%`, background: "var(--acc)" }} />
+            </span>
+            <span className="leg-eye">{pagadas} de {total} pagadas</span>
+          </div>
+        </div>
+        <span style={{ color: "var(--muted)", transform: abierto ? "rotate(180deg)" : "none", transition: "transform .2s" }}><Ic n="arrow" s={16} /></span>
+      </button>
+
+      {abierto && cob.pagos.map(p => {
+        const key = `${cob._id}:${p.mes}`
+        const chip = estadoChip(p)
+        const canUpload = p.estado !== "COBRADA" && p.estado !== "COMPROBANTE_RECIBIDO" && p.estado !== "ANULADA" && p.estado !== "NO_CORRESPONDE"
+        const yaSubio = p.estado === "COMPROBANTE_RECIBIDO"
+        const showMsg = msg && msg.key === key
+        return (
+          <div key={p.mes} className="leg-cuota" style={{ flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 150 }}>
+              <p className="leg-display" style={{ margin: 0, fontSize: 14 }}>{p.mesLabel || p.mes}{p.numeroCuota ? ` · cuota ${p.numeroCuota}` : ""}</p>
+              <div style={{ marginTop: 7, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                <span className="leg-stamp" style={TONES[chip.tone]}>{chip.label}</span>
+                {p.monto != null && <span className="leg-mono" style={{ fontSize: 14, fontWeight: 600 }}>{moneyAR(p.monto)}</span>}
+              </div>
+              {yaSubio && <p style={{ margin: "9px 0 0", fontSize: 12, color: "var(--muted)" }}>Recibimos tu comprobante el {dateAR(p.comprobante?.subidoEn, true)}. Lo está revisando tu productor.</p>}
+              {p.comprobante?.rechazadoEn && <p style={{ margin: "9px 0 0", fontSize: 12, color: "var(--mora)" }}>Tu comprobante fue rechazado{p.comprobante.rechazoMotivo ? `: ${p.comprobante.rechazoMotivo}` : "."} Probá subir uno nuevo.</p>}
+            </div>
+            {canUpload && (
+              <label className="leg-drop" style={{ alignSelf: "center" }}>
+                <input type="file" accept="image/*,application/pdf" disabled={subiendoKey === key}
+                  onChange={async e => { const f = e.target.files?.[0]; if (f) await onUpload(cob._id, p.mes, f); e.target.value = "" }} />
+                <Ic n="camera" s={18} />
+                {subiendoKey === key ? "Enviando…" : "Subir comprobante"}
+              </label>
+            )}
+            {showMsg && (
+              <div className={msg!.tone === "ok" ? "leg-msg-ok" : "leg-msg-err"} style={{ width: "100%", borderRadius: 10, padding: "9px 13px", fontSize: 12.5 }}>{msg!.text}</div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function SiniestroRow({ s }: { s: LegajoSiniestro }) {
+  const est = ESTADO_SINIESTRO[s.estado || "EN_TRAMITE"] || ESTADO_SINIESTRO.EN_TRAMITE
+  const tipo = TIPO_SINIESTRO[s.tipoSiniestro || "OTRO"] || labelRamo(s.tipoSiniestro) || "Siniestro"
+  return (
+    <div className="leg-sin">
+      <span className="leg-iconbox" style={{ width: 40, height: 40, background: "#FBEAE7", color: "var(--mora)" }}><Ic n="triangle" s={19} /></span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <p className="leg-display" style={{ margin: 0, fontSize: 14 }}>{tipo}</p>
+          <span className="leg-stamp" style={TONES[est.tone]}>{est.label}</span>
+        </div>
+        <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--muted)" }}>
+          {[
+            s.fechaOcurrencia ? dateAR(s.fechaOcurrencia, true) : "",
+            s.bienAsegurado || "",
+            s.numeroSiniestro ? "N° " + s.numeroSiniestro : "",
+          ].filter(Boolean).join(" · ")}
+        </p>
+        {s.denunciaAdministrativa === "PENDIENTE" && (
+          <p style={{ margin: "5px 0 0", fontSize: 11.5, color: "var(--gold)" }}>Denuncia administrativa pendiente</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function TelRow({ label, tel, accent }: { label: string; tel: string; accent: string }) {
   return (
     <a href={`tel:${tel.replace(/\s+/g, "")}`} style={{ textDecoration: "none" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 12, padding: "11px 13px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--surf)", border: "1px solid var(--line)", borderRadius: 12, padding: "11px 13px" }}>
         <div>
           <p style={{ margin: 0, fontSize: 10.5, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>{label}</p>
           <p className="leg-mono" style={{ margin: "2px 0 0", fontSize: 17, fontWeight: 600, color: "var(--ink)" }}>{tel}</p>
@@ -418,74 +695,5 @@ function TelRow({ label, tel, accent }: { label: string; tel: string; accent: st
         <span style={{ color: accent }}><Ic n="phone" s={19} /></span>
       </div>
     </a>
-  )
-}
-
-function CobranzaCard({
-  cob, accent, onUpload, subiendoKey, msg,
-}: {
-  cob: LegajoCobranza
-  accent: string
-  onUpload: (cobranzaId: string, mes: string, file: File) => Promise<void>
-  subiendoKey: string | null
-  msg: { key: string; text: string; tone: "ok" | "err" } | null
-}) {
-  const proxIdx = cob.pagos.findIndex(p => p.estado !== "COBRADA" && p.estado !== "NO_CORRESPONDE" && p.estado !== "ANULADA")
-  const [abierto, setAbierto] = useState(proxIdx >= 0)
-  const pagadas = cob.pagos.filter(p => p.estado === "COBRADA").length
-  const total = cob.numeroCuotasTotal || cob.pagos.length
-
-  return (
-    <div className="leg-card leg-pop" style={{ marginBottom: 12, overflow: "hidden" }}>
-      <button onClick={() => setAbierto(v => !v)} style={{ width: "100%", textAlign: "left", padding: "15px 17px", background: "transparent", border: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, color: "inherit" }}>
-        <span className="leg-iconbox" style={{ width: 40, height: 40, background: `color-mix(in srgb, ${accent} 12%, #fff)`, color: accent }}><Ic n="receipt" s={19} /></span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p className="leg-display" style={{ margin: 0, fontSize: 14.5 }}>{labelCompania(cob.aseguradora) || "Cobranza"}{cob.patente ? " · " + cob.patente : ""}</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5 }}>
-            <span style={{ position: "relative", width: 64, height: 5, borderRadius: 3, background: "var(--line)", overflow: "hidden", flexShrink: 0 }}>
-              <span style={{ position: "absolute", inset: 0, width: `${total ? (pagadas / total) * 100 : 0}%`, background: accent }} />
-            </span>
-            <span className="leg-eye">{pagadas} de {total} pagadas</span>
-          </div>
-        </div>
-        <span style={{ color: "var(--muted)", transform: abierto ? "rotate(180deg)" : "none", transition: "transform .2s" }}><Ic n="arrow" s={17} /></span>
-      </button>
-
-      {abierto && (
-        <div style={{ borderTop: "1px solid var(--line)" }}>
-          {cob.pagos.map(p => {
-            const key = `${cob._id}:${p.mes}`
-            const chip = estadoChip(p)
-            const canUpload = p.estado !== "COBRADA" && p.estado !== "COMPROBANTE_RECIBIDO" && p.estado !== "ANULADA" && p.estado !== "NO_CORRESPONDE"
-            const yaSubio = p.estado === "COMPROBANTE_RECIBIDO"
-            const showMsg = msg && msg.key === key
-            return (
-              <div key={p.mes} className="leg-cuota" style={{ flexWrap: "wrap" }}>
-                <div style={{ flex: 1, minWidth: 160 }}>
-                  <p className="leg-display" style={{ margin: 0, fontSize: 14 }}>{p.mesLabel || p.mes}{p.numeroCuota ? ` · cuota ${p.numeroCuota}` : ""}</p>
-                  <div style={{ marginTop: 7, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-                    <span className="leg-stamp" style={TONES[chip.tone]}>{chip.label}</span>
-                    {p.monto != null && <span className="leg-mono" style={{ fontSize: 14, fontWeight: 600 }}>{moneyAR(p.monto)}</span>}
-                  </div>
-                  {yaSubio && <p style={{ margin: "9px 0 0", fontSize: 12, color: "var(--muted)" }}>Recibimos tu comprobante el {dateAR(p.comprobante?.subidoEn, true)}. Lo está revisando tu productor.</p>}
-                  {p.comprobante?.rechazadoEn && <p style={{ margin: "9px 0 0", fontSize: 12, color: "var(--mora)" }}>Tu comprobante fue rechazado{p.comprobante.rechazoMotivo ? `: ${p.comprobante.rechazoMotivo}` : "."} Probá subir uno nuevo.</p>}
-                </div>
-                {canUpload && (
-                  <label className="leg-drop" style={{ alignSelf: "center" }}>
-                    <input type="file" accept="image/*,application/pdf" disabled={subiendoKey === key}
-                      onChange={async e => { const f = e.target.files?.[0]; if (f) await onUpload(cob._id, p.mes, f); e.target.value = "" }} />
-                    <Ic n="camera" s={18} />
-                    {subiendoKey === key ? "Enviando…" : "Subir comprobante"}
-                  </label>
-                )}
-                {showMsg && (
-                  <div className={msg.tone === "ok" ? "leg-msg-ok" : "leg-msg-err"} style={{ width: "100%", borderRadius: 10, padding: "9px 13px", fontSize: 12.5 }}>{msg.text}</div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
   )
 }

@@ -967,7 +967,8 @@ export interface CompaniaConfig {
 export interface LegajoVehiculo {
   _id: string; patente?: string; ramo?: string; aseguradora?: string
   tipoCobertura?: string; datosRiesgo?: string; chasis?: string; motor?: string; gnc?: boolean
-  numPoliza?: string; fechaInicVig?: string; fechaFinVig?: string; estado?: string
+  numPoliza?: string; medioDePago?: string; domicilio?: string; localidad?: string
+  fechaInicVig?: string; fechaFinVig?: string; estado?: string
 }
 
 export interface LegajoPago {
@@ -984,11 +985,19 @@ export interface LegajoCobranza {
   pagos: LegajoPago[]
 }
 
+export interface LegajoSiniestro {
+  _id: string; polizaId?: string; numPoliza?: string
+  bienAsegurado?: string; fechaOcurrencia?: string; tipoSiniestro?: string
+  compania?: string; estado?: "EN_TRAMITE" | "FINALIZADO" | "RECHAZADO"
+  numeroSiniestro?: string; denunciaAdministrativa?: "REALIZADA" | "PENDIENTE"
+}
+
 export interface LegajoPublico {
   productor: { nombre: string; logo?: string; colorPrimario?: string; whatsapp?: string; telefono?: string; email?: string; datosCobro?: DatosCobro | null }
   cliente: { nombreApellido: string; dni?: string; email?: string; telefono?: string }
   vehiculos: LegajoVehiculo[]
   cuentaCorriente: LegajoCobranza[]
+  siniestros: LegajoSiniestro[]
   companias: CompaniaConfig[]
 }
 
