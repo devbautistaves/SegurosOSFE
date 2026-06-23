@@ -928,6 +928,22 @@ export const suscripcionAPI = {
     fetchAPI<{ success: boolean }>("/api/suscripcion/cancelar", { method: "POST", token }),
 }
 
+// WhatsApp — conexión del número del negocio vía el whatsapp-gateway.
+export type WaStatus = "disconnected" | "qr_pending" | "connecting" | "connected" | "expired" | "banned"
+export interface WaState { ok?: boolean; status: WaStatus; phone: string | null; qr: string | null; lastError: string | null }
+export interface WaMessageLog { to: string; body: string; origin: string; templateKey: string | null; status: "sent" | "failed"; error: string | null; createdAt: string }
+export const whatsappAPI = {
+  status: (token: string) => fetchAPI<WaState>("/api/whatsapp/status", { token }),
+  qr: (token: string) => fetchAPI<{ ok: boolean; status: WaStatus; qr: string | null }>("/api/whatsapp/qr", { token }),
+  connect: (token: string) => fetchAPI<WaState>("/api/whatsapp/connect", { method: "POST", token }),
+  reconnect: (token: string) => fetchAPI<WaState>("/api/whatsapp/reconnect", { method: "POST", token }),
+  logout: (token: string) => fetchAPI<{ ok: boolean; status: WaStatus }>("/api/whatsapp/logout", { method: "POST", token }),
+  test: (token: string, to: string, text?: string) =>
+    fetchAPI<{ ok: boolean; jid?: string; error?: string }>("/api/whatsapp/test", { method: "POST", token, body: JSON.stringify({ to, text }) }),
+  history: (token: string) => fetchAPI<{ ok: boolean; items: WaMessageLog[] }>("/api/whatsapp/history", { token }),
+  usage: (token: string) => fetchAPI<{ ok: boolean; enviados: number; limite: number; ventanaSeg: number; resetEnSeg: number }>("/api/whatsapp/usage", { token }),
+}
+
 export const aseguradoraAPI = {
   getMe: (token: string) =>
     fetchAPI<{ success: boolean; aseguradora: Aseguradora }>("/api/aseguradora/me", { token }),
