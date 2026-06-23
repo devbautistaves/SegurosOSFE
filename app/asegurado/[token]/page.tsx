@@ -245,11 +245,10 @@ export default function AseguradoLegajoPage() {
         .leg-patente::before{ content:"ⓂERCOSUR · ARGENTINA"; position:absolute; top:0; left:0; right:0;
           background:#0B3D91; color:#fff; font-size:8.5px; letter-spacing:.18em; text-align:center; padding:3px 6px;
           font-family:'IBM Plex Mono',monospace; border-radius:5px 5px 0 0; }
-        /* Cuadro de datos tipo cédula */
-        .leg-dl{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line);
-          border:1px solid var(--line); border-radius:13px; overflow:hidden; }
-        @media(max-width:540px){ .leg-dl{ grid-template-columns:1fr; } }
-        .leg-dl .cell{ background:var(--surf); padding:11px 14px; min-width:0; }
+        /* Cuadro de datos tipo cédula — tiles independientes: se ven bien con 1 dato o con 15 */
+        .leg-dl{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+        @media(max-width:520px){ .leg-dl{ grid-template-columns:1fr; } }
+        .leg-dl .cell{ background:var(--paper); border:1px solid var(--line); border-radius:11px; padding:11px 13px; min-width:0; }
         .leg-dl .cell.wide{ grid-column:1 / -1; }
         .leg-dl .cell .v{ font-size:14px; font-weight:600; color:var(--ink); margin-top:3px; word-break:break-word; }
         .leg-stamp{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
@@ -529,7 +528,8 @@ function PolizaCard({
   const v = grupo.poliza
   const vigente = v.estado === "VIGENTE"
   const tone = vigente ? "ok" : v.estado === "ANULADA" || v.estado === "NO_VIGENTE" ? "neutral" : "next"
-  const titulo = v.datosRiesgo || labelRamo(v.ramo) || "Cobertura"
+  const titulo = v.datosRiesgo || labelRamo(v.ramo) || (v.numPoliza ? `Póliza N° ${v.numPoliza}` : "")
+    || labelCompania(v.aseguradora) || v.patente || "Tu cobertura"
   const esVehiculo = esVehiculoRamo(v)
 
   return (
@@ -563,7 +563,7 @@ function PolizaCard({
           <Campo label="Ramo" value={labelRamo(v.ramo)} />
           <Campo label="Cobertura" value={v.tipoCobertura} />
           <Campo label="Medio de pago" value={v.medioDePago ? (MEDIO_PAGO[v.medioDePago] || labelRamo(v.medioDePago)) : ""} />
-          {!esVehiculo && <Campo label="Patente / Bien" value={v.patente} mono />}
+          {!esVehiculo && v.patente !== titulo && <Campo label="Patente / Bien" value={v.patente} mono />}
           <Campo label="Vigencia desde" value={dateAR(v.fechaInicVig)} mono />
           <Campo label="Vigencia hasta" value={dateAR(v.fechaFinVig)} mono />
           <Campo label="N° de chasis" value={v.chasis} mono />
