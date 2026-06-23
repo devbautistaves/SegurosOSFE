@@ -988,7 +988,7 @@ export interface LegajoCobranza {
 export interface LegajoSiniestro {
   _id: string; polizaId?: string; numPoliza?: string
   bienAsegurado?: string; fechaOcurrencia?: string; tipoSiniestro?: string
-  compania?: string; estado?: "EN_TRAMITE" | "FINALIZADO" | "RECHAZADO"
+  compania?: string; estado?: "DENUNCIADO" | "EN_ANALISIS" | "PERITAJE" | "EN_REPARACION" | "A_INDEMNIZAR" | "FINALIZADO" | "RECHAZADO" | "EN_TRAMITE"
   numeroSiniestro?: string; denunciaAdministrativa?: "REALIZADA" | "PENDIENTE"
 }
 
@@ -2380,7 +2380,7 @@ export type PolizaEstado = "vigente" | "pendiente_pago" | "en_mora" | "renovacio
 export type FormaPago = "efectivo" | "cupon" | "debito" | "credito" | "transferencia"
 export type FrecuenciaPago = "mensual" | "bimestral" | "trimestral" | "semestral" | "anual"
 export type CobranzaEstado = "pendiente" | "pagado" | "vencido" | "mora"
-export type SiniestroEstado = "EN_TRAMITE" | "FINALIZADO" | "RECHAZADO"
+export type SiniestroEstado = "DENUNCIADO" | "EN_ANALISIS" | "PERITAJE" | "EN_REPARACION" | "A_INDEMNIZAR" | "FINALIZADO" | "RECHAZADO" | "EN_TRAMITE"
 export type LiquidacionSeguroEstado = "borrador" | "aprobada" | "pagada"
 
 export interface BienAsegurado {

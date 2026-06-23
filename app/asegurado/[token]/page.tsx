@@ -41,9 +41,29 @@ const TIPO_SINIESTRO: Record<string, string> = {
   GRANIZO: "Granizo", OTRO: "Siniestro",
 }
 const ESTADO_SINIESTRO: Record<string, { label: string; tone: string }> = {
-  EN_TRAMITE: { label: "En trámite", tone: "wait" },
-  FINALIZADO: { label: "Finalizado", tone: "ok" },
-  RECHAZADO: { label: "Rechazado", tone: "mora" },
+  DENUNCIADO:    { label: "Denunciado", tone: "next" },
+  EN_ANALISIS:   { label: "En análisis", tone: "wait" },
+  PERITAJE:      { label: "Peritaje / inspección", tone: "wait" },
+  EN_REPARACION: { label: "En reparación / gestión", tone: "wait" },
+  A_INDEMNIZAR:  { label: "A indemnizar / cobrar", tone: "next" },
+  FINALIZADO:    { label: "Finalizado", tone: "ok" },
+  RECHAZADO:     { label: "Rechazado", tone: "mora" },
+  EN_TRAMITE:    { label: "En trámite", tone: "wait" },
+}
+// Pasos del seguimiento que ve el cliente (en orden). RECHAZADO es terminal aparte.
+const SINIESTRO_PASOS: { key: string; label: string }[] = [
+  { key: "DENUNCIADO", label: "Denunciado" },
+  { key: "EN_ANALISIS", label: "En análisis" },
+  { key: "PERITAJE", label: "Peritaje" },
+  { key: "EN_REPARACION", label: "En gestión" },
+  { key: "A_INDEMNIZAR", label: "A cobrar" },
+  { key: "FINALIZADO", label: "Finalizado" },
+]
+// Índice del paso actual. EN_TRAMITE (legacy) cae en "En análisis".
+function pasoActual(estado?: string): number {
+  if (estado === "EN_TRAMITE") return 1
+  const i = SINIESTRO_PASOS.findIndex(p => p.key === estado)
+  return i >= 0 ? i : 0
 }
 
 // ── Iconos SVG inline (stroke = currentColor) ─────────────────────────────────
@@ -273,6 +293,17 @@ export default function AseguradoLegajoPage() {
         .leg-msg-ok{ background:#E2F4ED; color:#0A5440; border:1px solid #1C8C6C; }
         .leg-msg-err{ background:#FBEAE7; color:#8C2A18; border:1px solid #C8503A; }
         .leg-sin{ display:flex; gap:12px; align-items:flex-start; padding:13px; background:var(--paper); border:1px solid var(--line); border-radius:12px; }
+        /* Seguimiento del siniestro */
+        .leg-steps{ display:flex; align-items:flex-start; gap:0; margin-top:12px; }
+        .leg-step{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; }
+        .leg-step::before{ content:""; position:absolute; top:8px; left:-50%; width:100%; height:2px; background:var(--line); z-index:0; }
+        .leg-step:first-child::before{ display:none; }
+        .leg-step.done::before{ background:var(--acc); }
+        .leg-step .dot{ width:17px; height:17px; border-radius:50%; background:var(--surf); border:2px solid var(--line); z-index:1; display:flex; align-items:center; justify-content:center; }
+        .leg-step.done .dot{ background:var(--acc); border-color:var(--acc); color:#fff; }
+        .leg-step.curr .dot{ box-shadow:0 0 0 4px color-mix(in srgb, var(--acc) 22%, transparent); }
+        .leg-step .lbl{ font-size:9.5px; line-height:1.15; text-align:center; color:var(--muted); font-family:'IBM Plex Mono',monospace; letter-spacing:.02em; max-width:60px; }
+        .leg-step.done .lbl, .leg-step.curr .lbl{ color:var(--ink); font-weight:600; }
         @keyframes legPop{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
         .leg-pop{ animation:legPop .5s cubic-bezier(.2,.7,.2,1) both; }
         @media (prefers-reduced-motion: reduce){ .leg-pop{ animation:none } }
@@ -659,27 +690,50 @@ function CuotasList({
 }
 
 function SiniestroRow({ s }: { s: LegajoSiniestro }) {
-  const est = ESTADO_SINIESTRO[s.estado || "EN_TRAMITE"] || ESTADO_SINIESTRO.EN_TRAMITE
+  const est = ESTADO_SINIESTRO[s.estado || "DENUNCIADO"] || ESTADO_SINIESTRO.DENUNCIADO
   const tipo = TIPO_SINIESTRO[s.tipoSiniestro || "OTRO"] || labelRamo(s.tipoSiniestro) || "Siniestro"
+  const rechazado = s.estado === "RECHAZADO"
+  const idx = pasoActual(s.estado)
   return (
-    <div className="leg-sin">
-      <span className="leg-iconbox" style={{ width: 40, height: 40, background: "#FBEAE7", color: "var(--mora)" }}><Ic n="triangle" s={19} /></span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <p className="leg-display" style={{ margin: 0, fontSize: 14 }}>{tipo}</p>
-          <span className="leg-stamp" style={TONES[est.tone]}>{est.label}</span>
+    <div className="leg-sin" style={{ flexDirection: "column", alignItems: "stretch" }}>
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+        <span className="leg-iconbox" style={{ width: 40, height: 40, background: "#FBEAE7", color: "var(--mora)" }}><Ic n="triangle" s={19} /></span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <p className="leg-display" style={{ margin: 0, fontSize: 14 }}>{tipo}</p>
+            <span className="leg-stamp" style={TONES[est.tone]}>{est.label}</span>
+          </div>
+          <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--muted)" }}>
+            {[
+              s.fechaOcurrencia ? dateAR(s.fechaOcurrencia, true) : "",
+              s.bienAsegurado || "",
+              s.numeroSiniestro ? "N° " + s.numeroSiniestro : "",
+            ].filter(Boolean).join(" · ")}
+          </p>
+          {s.denunciaAdministrativa === "PENDIENTE" && (
+            <p style={{ margin: "5px 0 0", fontSize: 11.5, color: "var(--gold)" }}>Denuncia administrativa pendiente</p>
+          )}
         </div>
-        <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--muted)" }}>
-          {[
-            s.fechaOcurrencia ? dateAR(s.fechaOcurrencia, true) : "",
-            s.bienAsegurado || "",
-            s.numeroSiniestro ? "N° " + s.numeroSiniestro : "",
-          ].filter(Boolean).join(" · ")}
-        </p>
-        {s.denunciaAdministrativa === "PENDIENTE" && (
-          <p style={{ margin: "5px 0 0", fontSize: 11.5, color: "var(--gold)" }}>Denuncia administrativa pendiente</p>
-        )}
       </div>
+
+      {/* Seguimiento del trámite */}
+      {rechazado ? (
+        <div style={{ marginTop: 12, background: "#FBEAE7", border: "1px solid #C8503A", color: "#8C2A18", borderRadius: 10, padding: "9px 12px", fontSize: 12.5, display: "flex", alignItems: "center", gap: 8 }}>
+          <Ic n="alert" s={16} /> Este siniestro fue rechazado. Si tenés dudas, escribinos.
+        </div>
+      ) : (
+        <div className="leg-steps">
+          {SINIESTRO_PASOS.map((p, i) => {
+            const cls = i < idx ? "done" : i === idx ? "done curr" : ""
+            return (
+              <div key={p.key} className={`leg-step ${cls}`}>
+                <span className="dot">{i < idx ? <Ic n="check" s={10} w={3} /> : null}</span>
+                <span className="lbl">{p.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

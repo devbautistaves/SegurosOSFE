@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -20,8 +20,8 @@ import {
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import { MonthNavigator } from "@/components/ui/month-navigator"
-import { segurosAPI, Siniestro } from "@/lib/api"
-import { AlertTriangle, Plus, Search, Edit2, Trash2, X, Clock, CheckCircle2, XCircle } from "lucide-react"
+import { segurosAPI, Siniestro, Poliza } from "@/lib/api"
+import { AlertTriangle, Plus, Search, Edit2, Trash2, X, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCatalogos } from "@/hooks/use-catalogos"
 
@@ -48,19 +48,30 @@ const ASEG_LABELS: Record<string, string> = {
   PROVIDENCIA: "Providencia", PROF: "Prof", OTRA: "Otra",
 }
 
+// Pipeline de seguimiento del siniestro (lo ve el cliente en su landing).
+const ESTADOS_SIN = ["DENUNCIADO", "EN_ANALISIS", "PERITAJE", "EN_REPARACION", "A_INDEMNIZAR", "FINALIZADO", "RECHAZADO"]
+const ESTADO_SIN_LABELS: Record<string, string> = {
+  DENUNCIADO: "Denunciado", EN_ANALISIS: "En análisis", PERITAJE: "Peritaje / inspección",
+  EN_REPARACION: "En reparación / gestión", A_INDEMNIZAR: "A indemnizar / cobrar",
+  FINALIZADO: "Finalizado", RECHAZADO: "Rechazado", EN_TRAMITE: "En trámite",
+}
+const labelEstadoSin = (e?: string) => ESTADO_SIN_LABELS[e || ""] || e || "—"
+// Mapeo ramo de póliza → bien asegurado del siniestro.
+const RAMO_A_BIEN: Record<string, string> = { AUTOS: "AUTO", MOTOS: "MOTO", HOGAR: "HOGAR" }
+
 function estadoBadge(estado: string) {
-  switch (estado) {
-    case "EN_TRAMITE":
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-500"><Clock className="h-3 w-3" />En Trámite</span>
-    case "FINALIZADO":
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-500"><CheckCircle2 className="h-3 w-3" />Finalizado</span>
-    default:
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-500"><XCircle className="h-3 w-3" />Rechazado</span>
-  }
+  const label = labelEstadoSin(estado)
+  if (estado === "FINALIZADO")
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-500"><CheckCircle2 className="h-3 w-3" />{label}</span>
+  if (estado === "RECHAZADO")
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-500"><XCircle className="h-3 w-3" />{label}</span>
+  if (estado === "A_INDEMNIZAR")
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/15 text-blue-500"><Clock className="h-3 w-3" />{label}</span>
+  return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-500"><Clock className="h-3 w-3" />{label}</span>
 }
 
 const EMPTY: Partial<Siniestro> = {
-  asegurado: "", estado: "EN_TRAMITE", denunciaAdministrativa: "PENDIENTE",
+  asegurado: "", estado: "DENUNCIADO", denunciaAdministrativa: "PENDIENTE",
   numPoliza: "", compania: "", numeroSiniestro: "", observaciones: "",
 }
 
@@ -106,14 +117,74 @@ export default function SiniestrosPage() {
 
   useEffect(() => { fetchSiniestros() }, [estadoFilter, companiaFilter, tipoFilter, filterYear, filterMonth])
 
-  const enTramite = siniestros.filter(s => s.estado === "EN_TRAMITE").length
+  const enProceso = siniestros.filter(s => s.estado !== "FINALIZADO" && s.estado !== "RECHAZADO").length
   const finalizados = siniestros.filter(s => s.estado === "FINALIZADO").length
 
   const hasFilters = estadoFilter !== "all" || companiaFilter !== "all" || tipoFilter !== "all" || search.trim() !== ""
   const clearFilters = () => { setEstadoFilter("all"); setCompaniaFilter("all"); setTipoFilter("all"); setSearch("") }
 
-  const openCreate = () => { setSelected(null); setFormData(EMPTY); setIsDialogOpen(true) }
-  const openEdit = (s: Siniestro) => { setSelected(s); setFormData({ ...s }); setIsDialogOpen(true) }
+  // ── Autocomplete del asegurado por apellido + selección de su póliza ──────────
+  type AseguradoSug = Awaited<ReturnType<typeof segurosAPI.buscarAsegurados>>["asegurados"][number]
+  const [aseguradoSugs, setAseguradoSugs] = useState<AseguradoSug[]>([])
+  const [aseguradoLoading, setAseguradoLoading] = useState(false)
+  const [aseguradoOpen, setAseguradoOpen] = useState(false)
+  const [aseguradoFromPick, setAseguradoFromPick] = useState(false)
+  const aseguradoBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Pólizas del cliente elegido (para vincular el siniestro a una póliza concreta).
+  const [clientePolizas, setClientePolizas] = useState<Poliza[]>([])
+
+  // Busca asegurados existentes mientras se escribe (solo en creación).
+  useEffect(() => {
+    if (selected) return
+    if (aseguradoFromPick) { setAseguradoFromPick(false); return }
+    const q = (formData.asegurado || "").trim()
+    if (q.length < 2) { setAseguradoSugs([]); setAseguradoOpen(false); return }
+    const token = localStorage.getItem("token")
+    if (!token) return
+    const t = setTimeout(async () => {
+      try {
+        setAseguradoLoading(true)
+        const res = await segurosAPI.buscarAsegurados(token, q, 8)
+        setAseguradoSugs(res.asegurados || [])
+        setAseguradoOpen((res.asegurados || []).length > 0)
+      } catch { /* silenciar */ }
+      finally { setAseguradoLoading(false) }
+    }, 280)
+    return () => clearTimeout(t)
+  }, [formData.asegurado, selected, aseguradoFromPick])
+
+  // Al elegir un cliente: fija el nombre exacto y carga sus pólizas para vincular.
+  const pickAsegurado = async (a: AseguradoSug) => {
+    setAseguradoFromPick(true)
+    setAseguradoOpen(false)
+    setFormData(prev => ({ ...prev, asegurado: a.nombreApellido }))
+    const token = localStorage.getItem("token")
+    if (!token) return
+    try {
+      const res = await segurosAPI.getPolizas(token, { search: a.dni || a.nombreApellido, limit: "50" })
+      // Filtra a las pólizas de esta persona exacta (el search es amplio).
+      const mias = (res.polizas || []).filter(p =>
+        (a.dni && p.dni === a.dni) ||
+        (p.nombreApellido || "").toUpperCase() === (a.nombreApellido || "").toUpperCase())
+      setClientePolizas(mias)
+    } catch { setClientePolizas([]) }
+  }
+
+  // Al elegir una póliza del cliente: autocompleta y vincula (polizaId).
+  const pickPoliza = (polizaId: string) => {
+    const p = clientePolizas.find(x => x._id === polizaId)
+    if (!p) return
+    setFormData(prev => ({
+      ...prev,
+      polizaId: p._id,
+      numPoliza: p.numPoliza || prev.numPoliza,
+      compania: p.aseguradora || prev.compania,
+      bienAsegurado: prev.bienAsegurado || RAMO_A_BIEN[p.ramo || ""] || "OTRO",
+    }))
+  }
+
+  const openCreate = () => { setSelected(null); setFormData(EMPTY); setClientePolizas([]); setAseguradoSugs([]); setAseguradoOpen(false); setIsDialogOpen(true) }
+  const openEdit = (s: Siniestro) => { setSelected(s); setFormData({ ...s }); setClientePolizas([]); setAseguradoOpen(false); setIsDialogOpen(true) }
 
   const f = (key: keyof Siniestro) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setFormData(p => ({ ...p, [key]: e.target.value }))
@@ -166,7 +237,7 @@ export default function SiniestrosPage() {
               <AlertTriangle className="h-8 w-8 text-amber-500" />
               Gestión de Siniestros
             </h1>
-            <p className="text-muted-foreground">{siniestros.length} siniestros — {enTramite} en trámite</p>
+            <p className="text-muted-foreground">{siniestros.length} siniestros — {enProceso} en proceso</p>
           </div>
           <Button onClick={openCreate} className="bg-amber-600 hover:bg-amber-700 text-white">
             <Plus className="mr-2 h-4 w-4" />
@@ -204,7 +275,7 @@ export default function SiniestrosPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "En Trámite", value: enTramite, color: "text-amber-500", bg: "bg-amber-500/10", icon: Clock, filter: "EN_TRAMITE" },
+            { label: "En proceso", value: enProceso, color: "text-amber-500", bg: "bg-amber-500/10", icon: Clock, filter: "all" },
             { label: "Finalizados", value: finalizados, color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2, filter: "FINALIZADO" },
             { label: "Total", value: siniestros.length, color: "text-blue-500", bg: "bg-blue-500/10", icon: AlertTriangle, filter: "all" },
           ].map(s => (
@@ -243,9 +314,7 @@ export default function SiniestrosPage() {
                 <SelectTrigger className="w-full sm:w-[160px] bg-secondary/50"><SelectValue placeholder="Estado" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="EN_TRAMITE">En Trámite</SelectItem>
-                  <SelectItem value="FINALIZADO">Finalizado</SelectItem>
-                  <SelectItem value="RECHAZADO">Rechazado</SelectItem>
+                  {ESTADOS_SIN.map(e => <SelectItem key={e} value={e}>{ESTADO_SIN_LABELS[e]}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={companiaFilter} onValueChange={setCompaniaFilter}>
@@ -348,12 +417,58 @@ export default function SiniestrosPage() {
             <FieldGroup>
               <Field>
                 <FieldLabel>Asegurado *</FieldLabel>
-                <Input value={formData.asegurado || ""} onChange={f("asegurado")} placeholder="APELLIDO NOMBRE" className="bg-secondary/50" />
+                <div className="relative">
+                  <Input
+                    value={formData.asegurado || ""}
+                    onChange={f("asegurado")}
+                    onFocus={() => { if (aseguradoSugs.length && !selected) setAseguradoOpen(true) }}
+                    onBlur={() => { aseguradoBlurTimer.current = setTimeout(() => setAseguradoOpen(false), 150) }}
+                    placeholder="Buscá por apellido…"
+                    autoComplete="off"
+                    className="bg-secondary/50"
+                  />
+                  {aseguradoLoading && <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />}
+                  {aseguradoOpen && !selected && aseguradoSugs.length > 0 && (
+                    <div
+                      className="absolute z-50 left-0 right-0 mt-1 rounded-md border border-border bg-popover shadow-lg max-h-64 overflow-auto"
+                      onMouseDown={() => { if (aseguradoBlurTimer.current) clearTimeout(aseguradoBlurTimer.current) }}
+                    >
+                      {aseguradoSugs.map((a, i) => (
+                        <button
+                          type="button" key={i}
+                          onClick={() => pickAsegurado(a)}
+                          className="w-full text-left px-3 py-2 hover:bg-secondary/60 border-b border-border/40 last:border-0"
+                        >
+                          <p className="text-sm font-medium">{a.nombreApellido}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {[a.dni ? "DNI " + a.dni : "", a.cantPolizas ? a.cantPolizas + (a.cantPolizas === 1 ? " póliza" : " pólizas") : ""].filter(Boolean).join(" · ")}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {clientePolizas.length > 0 && (
+                  <p className="text-xs text-emerald-600 mt-1">Cliente existente · {clientePolizas.length} {clientePolizas.length === 1 ? "póliza encontrada" : "pólizas encontradas"}. Elegí la póliza abajo para vincular el siniestro.</p>
+                )}
               </Field>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field>
-                  <FieldLabel>N° Póliza</FieldLabel>
-                  <Input value={formData.numPoliza || ""} onChange={f("numPoliza")} placeholder="Número de póliza" className="bg-secondary/50" />
+                  <FieldLabel>{clientePolizas.length > 0 ? "Póliza del cliente" : "N° Póliza"}</FieldLabel>
+                  {clientePolizas.length > 0 ? (
+                    <Select value={formData.polizaId || ""} onValueChange={pickPoliza}>
+                      <SelectTrigger className="bg-secondary/50"><SelectValue placeholder="Elegí la póliza…" /></SelectTrigger>
+                      <SelectContent>
+                        {clientePolizas.map(p => (
+                          <SelectItem key={p._id} value={p._id}>
+                            {[p.numPoliza ? "N° " + p.numPoliza : "s/n", p.patente || p.ramo, p.aseguradora ? (ASEG_LABELS[p.aseguradora] || p.aseguradora) : ""].filter(Boolean).join(" · ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input value={formData.numPoliza || ""} onChange={f("numPoliza")} placeholder="Número de póliza" className="bg-secondary/50" />
+                  )}
                 </Field>
                 <Field>
                   <FieldLabel>N° Siniestro</FieldLabel>
@@ -392,12 +507,10 @@ export default function SiniestrosPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field>
                   <FieldLabel>Estado</FieldLabel>
-                  <Select value={formData.estado || "EN_TRAMITE"} onValueChange={v => setFormData(p => ({ ...p, estado: v as any }))}>
+                  <Select value={formData.estado || "DENUNCIADO"} onValueChange={v => setFormData(p => ({ ...p, estado: v as any }))}>
                     <SelectTrigger className="bg-secondary/50"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="EN_TRAMITE">En Trámite</SelectItem>
-                      <SelectItem value="FINALIZADO">Finalizado</SelectItem>
-                      <SelectItem value="RECHAZADO">Rechazado</SelectItem>
+                      {ESTADOS_SIN.map(e => <SelectItem key={e} value={e}>{ESTADO_SIN_LABELS[e]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </Field>
