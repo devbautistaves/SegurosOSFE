@@ -5,13 +5,16 @@
 // Habla con /api/whatsapp/* (proxy al whatsapp-gateway).
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { whatsappAPI, type WaStatus, type WaMessageLog, type WaPolizasConfig, type WaPolizaKey, type WaPlantilla, type WaVariable } from "@/lib/api"
+import { whatsappAPI, suscripcionAPI, type WaStatus, type WaMessageLog, type WaPolizasConfig, type WaPolizaKey, type WaPlantilla, type WaVariable } from "@/lib/api"
 import {
   MessageCircle, Smartphone, QrCode, RefreshCw, LogOut, Send,
   CheckCircle2, XCircle, Loader2, ShieldCheck, AlertTriangle, Gauge, History,
-  Zap, BellRing, CalendarClock, AlarmClock, Pencil, RotateCcw, Info,
+  Zap, BellRing, CalendarClock, AlarmClock, Pencil, RotateCcw, Info, Crown, Lock,
 } from "lucide-react"
+
+const WA_TRIAL_LIMIT = 25 // avisos reales gratis en el plan trial
 
 // Íconos por tipo de aviso (la metadata —título/cuándo/plantilla— viene del BE).
 const AVISO_ICON: Record<string, any> = {
@@ -61,6 +64,9 @@ export default function WhatsAppPage() {
   const [savingTpl, setSavingTpl] = useState<string | null>(null)
   const [testingTpl, setTestingTpl] = useState<string | null>(null)
   const [tplMsg, setTplMsg] = useState<{ key: string; ok: boolean; msg: string } | null>(null)
+
+  // Límite del plan trial: 25 avisos reales, después solo PRO.
+  const [trial, setTrial] = useState<{ enTrial: boolean; usados: number; bloqueado: boolean }>({ enTrial: false, usados: 0, bloqueado: false })
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -113,7 +119,10 @@ export default function WhatsAppPage() {
 
   const loadHistory = useCallback(async (tk: string) => {
     try {
-      const [h, u, c, p] = await Promise.all([whatsappAPI.history(tk), whatsappAPI.usage(tk), whatsappAPI.getConfig(tk), whatsappAPI.getPlantillas(tk)])
+      const [h, u, c, p, s] = await Promise.all([
+        whatsappAPI.history(tk), whatsappAPI.usage(tk), whatsappAPI.getConfig(tk), whatsappAPI.getPlantillas(tk),
+        suscripcionAPI.estado(tk).catch(() => null),
+      ])
       if (h.ok) setHistory(h.items || [])
       if (u.ok) setUsage({ enviados: u.enviados, limite: u.limite })
       if (c.ok) setConfig(c.config)
@@ -123,6 +132,9 @@ export default function WhatsAppPage() {
         for (const a of p.avisos) ed[a.configKey] = a.custom || a.default
         setEdits(ed)
       }
+      const enTrial = !!(s && s.planCodigo === "TRIAL" && s.trialFinaliza && new Date(s.trialFinaliza) > new Date())
+      const usados = (u.ok && u.totalEnviados) || 0
+      setTrial({ enTrial, usados, bloqueado: enTrial && usados >= WA_TRIAL_LIMIT })
     } catch { /* silencioso */ }
   }, [])
 
@@ -183,6 +195,29 @@ export default function WhatsAppPage() {
             <p className="text-sm text-slate-500 mt-0.5">Conectá el WhatsApp del broker para enviar avisos de vencimiento y recordatorios.</p>
           </div>
         </div>
+
+        {/* Paywall del plan trial: bloqueado al llegar a 25 avisos reales */}
+        {trial.bloqueado && (
+          <div className="rounded-2xl border mb-5 px-5 py-4 flex items-start gap-3" style={{ background: "rgba(176,138,62,.08)", borderColor: "rgba(176,138,62,.3)" }}>
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(176,138,62,.16)" }}>
+              <Lock className="h-5 w-5" style={{ color: "#9A6B16" }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-sm" style={{ color: INK }}>Llegaste a los {WA_TRIAL_LIMIT} avisos de WhatsApp de la prueba</p>
+              <p className="text-xs text-slate-500 mt-0.5">Para seguir enviando avisos automáticos a tus asegurados, suscribite al plan PRO. Tu número y tus mensajes quedan guardados.</p>
+              <Link href="/admin/suscripcion" className="inline-flex items-center gap-1.5 mt-2.5 px-3.5 py-2 rounded-lg text-white text-xs font-semibold" style={{ background: ACCENT }}>
+                <Crown className="h-3.5 w-3.5" /> Suscribirme a PRO
+              </Link>
+            </div>
+          </div>
+        )}
+        {/* Aviso de cupo cerca del límite */}
+        {!trial.bloqueado && trial.enTrial && (
+          <div className="rounded-xl border mb-5 px-4 py-2.5 flex items-center gap-2 text-xs" style={{ background: "rgba(14,159,110,.05)", borderColor: "rgba(14,159,110,.2)" }}>
+            <Info className="h-3.5 w-3.5 flex-shrink-0" style={{ color: ACCENT }} />
+            <span className="text-slate-600">Plan de prueba: llevás <strong>{trial.usados}/{WA_TRIAL_LIMIT}</strong> avisos enviados. Al llegar a {WA_TRIAL_LIMIT} se pausa hasta que pases a PRO.</span>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center gap-2 text-slate-400 py-16 justify-center"><Loader2 className="h-5 w-5 animate-spin" /> Cargando estado…</div>
@@ -321,7 +356,7 @@ export default function WhatsAppPage() {
                           <button onClick={() => setAbierto(open ? null : a.configKey)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 px-2.5 py-1.5 rounded-lg border hover:bg-slate-50">
                             <Pencil className="h-3.5 w-3.5" /> {open ? "Cerrar" : "Editar mensaje"}
                           </button>
-                          <button onClick={() => probarAviso(a)} disabled={!isConnected || testingTpl === a.configKey} className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg text-white disabled:opacity-50" style={{ background: ACCENT }}>
+                          <button onClick={() => probarAviso(a)} disabled={!isConnected || testingTpl === a.configKey || trial.bloqueado} className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg text-white disabled:opacity-50" style={{ background: ACCENT }}>
                             {testingTpl === a.configKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Probar
                           </button>
                           {tplMsg && tplMsg.key === a.configKey && (
@@ -368,7 +403,7 @@ export default function WhatsAppPage() {
                 <input value={to} onChange={(e) => setTo(e.target.value)} disabled={!isConnected || sending} placeholder="Ej: 11 2345 6789"
                   className="flex-1 px-3.5 py-2.5 rounded-xl border text-sm disabled:bg-slate-50 disabled:text-slate-400 outline-none focus:ring-2"
                   style={{ ["--tw-ring-color" as any]: ACCENT }} />
-                <button onClick={enviarPrueba} disabled={!isConnected || sending || !to.trim()} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50" style={{ background: ACCENT }}>
+                <button onClick={enviarPrueba} disabled={!isConnected || sending || !to.trim() || trial.bloqueado} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50" style={{ background: ACCENT }}>
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar
                 </button>
               </div>

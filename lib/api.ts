@@ -941,7 +941,7 @@ export const whatsappAPI = {
   test: (token: string, to: string, text?: string) =>
     fetchAPI<{ ok: boolean; jid?: string; error?: string }>("/api/whatsapp/test", { method: "POST", token, body: JSON.stringify({ to, text }) }),
   history: (token: string) => fetchAPI<{ ok: boolean; items: WaMessageLog[] }>("/api/whatsapp/history", { token }),
-  usage: (token: string) => fetchAPI<{ ok: boolean; enviados: number; limite: number; ventanaSeg: number; resetEnSeg: number }>("/api/whatsapp/usage", { token }),
+  usage: (token: string) => fetchAPI<{ ok: boolean; enviados: number; limite: number; ventanaSeg: number; resetEnSeg: number; totalEnviados?: number }>("/api/whatsapp/usage", { token }),
   getConfig: (token: string) => fetchAPI<{ ok: boolean; config: WaPolizasConfig }>("/api/whatsapp/config", { token }),
   setConfig: (token: string, patch: Partial<WaPolizasConfig>) =>
     fetchAPI<{ ok: boolean; config: WaPolizasConfig }>("/api/whatsapp/config", { method: "PUT", token, body: JSON.stringify(patch) }),
