@@ -945,6 +945,13 @@ export const whatsappAPI = {
   getConfig: (token: string) => fetchAPI<{ ok: boolean; config: WaPolizasConfig }>("/api/whatsapp/config", { token }),
   setConfig: (token: string, patch: Partial<WaPolizasConfig>) =>
     fetchAPI<{ ok: boolean; config: WaPolizasConfig }>("/api/whatsapp/config", { method: "PUT", token, body: JSON.stringify(patch) }),
+  // Plantillas editables de los avisos.
+  getPlantillas: (token: string) =>
+    fetchAPI<{ ok: boolean; variables: WaVariable[]; avisos: WaPlantilla[] }>("/api/whatsapp/plantillas", { token }),
+  setPlantillas: (token: string, patch: Record<string, string>) =>
+    fetchAPI<{ ok: boolean }>("/api/whatsapp/plantillas", { method: "PUT", token, body: JSON.stringify(patch) }),
+  testAviso: (token: string, tipo: string, to: string) =>
+    fetchAPI<{ ok: boolean; error?: string }>("/api/whatsapp/test-aviso", { method: "POST", token, body: JSON.stringify({ tipo, to }) }),
 }
 export type WaPolizaKey = "polizaProxima" | "polizaVenceHoy" | "polizaVencida"
 export interface WaPolizasConfig {
@@ -953,6 +960,8 @@ export interface WaPolizasConfig {
   polizaVencida: { enabled: boolean }
   diasProximo: number
 }
+export interface WaVariable { tag: string; desc: string }
+export interface WaPlantilla { tipo: string; configKey: string; label: string; cuando: string; default: string; custom: string; preview: string }
 
 export const aseguradoraAPI = {
   getMe: (token: string) =>
@@ -1063,7 +1072,7 @@ export const legajoAseguradoAPI = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Onboarding interactivo (Aseguradora) — nuevo flow jun 2026
 // ─────────────────────────────────────────────────────────────────────────────
-export type OnboardingStep = "branding" | "poliza" | "cobranza" | "done"
+export type OnboardingStep = "branding" | "poliza" | "cobranza" | "whatsapp" | "done"
 
 export interface OnboardingState {
   currentStep: OnboardingStep

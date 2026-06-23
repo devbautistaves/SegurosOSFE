@@ -16,7 +16,8 @@ import { onboardingAPI, segurosAPI, type OnboardingState, type OnboardingStep } 
 import { FaseBranding } from "./fase-branding"
 import { FasePrimerPoliza } from "./fase-primer-poliza"
 import { FaseEmailCobranza } from "./fase-email-cobranza"
-import { Sparkles, Check, Clock, FileText, CreditCard, Palette, Trophy, Trash2, Loader2, Gift, ArrowRight, ShieldCheck, GraduationCap } from "lucide-react"
+import { FaseWhatsapp } from "./fase-whatsapp"
+import { Sparkles, Check, Clock, FileText, CreditCard, Palette, Trophy, Trash2, Loader2, Gift, ArrowRight, ShieldCheck, GraduationCap, MessageCircle } from "lucide-react"
 
 interface Props {
   onClose: () => void
@@ -24,10 +25,11 @@ interface Props {
 }
 
 const FASES: { key: OnboardingStep; label: string; icon: any; desc: string }[] = [
-  { key: "branding", label: "Personalización", icon: Palette,    desc: "Hacelo tuyo" },
-  { key: "poliza",   label: "Primera póliza",  icon: FileText,   desc: "Datos reales" },
-  { key: "cobranza", label: "Email cobranza",  icon: CreditCard, desc: "Notificá al cliente" },
-  { key: "done",     label: "Listo",           icon: Trophy,     desc: "A volar" },
+  { key: "branding", label: "Personalización", icon: Palette,       desc: "Hacelo tuyo" },
+  { key: "poliza",   label: "Primera póliza",  icon: FileText,      desc: "Datos reales" },
+  { key: "cobranza", label: "Email cobranza",  icon: CreditCard,    desc: "Notificá al cliente" },
+  { key: "whatsapp", label: "WhatsApp",        icon: MessageCircle, desc: "Avisos a clientes" },
+  { key: "done",     label: "Listo",           icon: Trophy,        desc: "A volar" },
 ]
 
 export function OnboardingWizard({ onClose, initialState }: Props) {
@@ -91,6 +93,7 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
     branding: 6,   // 7 sub-steps (logo..mediosPago)
     poliza:   3,   // 4 sub-steps (asegurado..cobranza)
     cobranza: 0,   // pantalla única
+    whatsapp: 0,   // conexión + prueba (sin sub-steps)
     done:     0,
   }
   const safeSubStep = Math.max(0, Math.min(state.subStep || 0, SUB_STEP_MAX[state.currentStep] ?? 0))
@@ -204,9 +207,12 @@ export function OnboardingWizard({ onClose, initialState }: Props) {
             primerPolizaId={state.primerPolizaId}
             primerPolizaEsPrueba={!!state.primerPolizaEsPrueba}
             onEmailEnviado={(fechaIso) => advance({ primerEmailEnviadoEn: fechaIso })}
-            onSkipFase={() => goNextFase("done", 0)}
+            onSkipFase={() => goNextFase("whatsapp", 0)}
             onPrevFase={() => goNextFase("poliza", 0)}
           />
+        )}
+        {state.currentStep === "whatsapp" && !isDone && (
+          <FaseWhatsapp onPrev={() => goNextFase("cobranza", 0)} onComplete={() => goNextFase("done", 0)} />
         )}
         {(state.currentStep === "done" || isDone) && (
           <DoneScreen

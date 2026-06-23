@@ -6,19 +6,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { whatsappAPI, type WaStatus, type WaMessageLog, type WaPolizasConfig, type WaPolizaKey } from "@/lib/api"
+import { whatsappAPI, type WaStatus, type WaMessageLog, type WaPolizasConfig, type WaPolizaKey, type WaPlantilla, type WaVariable } from "@/lib/api"
 import {
   MessageCircle, Smartphone, QrCode, RefreshCw, LogOut, Send,
   CheckCircle2, XCircle, Loader2, ShieldCheck, AlertTriangle, Gauge, History,
-  Zap, BellRing, CalendarClock, AlarmClock,
+  Zap, BellRing, CalendarClock, AlarmClock, Pencil, RotateCcw, Info,
 } from "lucide-react"
 
-// Avisos de vencimiento de póliza disponibles.
-const AVISOS: { key: WaPolizaKey; icon: any; title: string; desc: string }[] = [
-  { key: "polizaProxima",  icon: BellRing,      title: "Aviso de póliza por vencer", desc: "Recordatorio de renovación unos días antes." },
-  { key: "polizaVenceHoy", icon: CalendarClock, title: "Aviso el día que vence",     desc: "Mensaje el día del vencimiento." },
-  { key: "polizaVencida",  icon: AlarmClock,    title: "Aviso de póliza vencida",    desc: "Recordatorio cuando la póliza queda sin vigencia." },
-]
+// Íconos por tipo de aviso (la metadata —título/cuándo/plantilla— viene del BE).
+const AVISO_ICON: Record<string, any> = {
+  polizaProxima: BellRing, polizaVenceHoy: CalendarClock, polizaVencida: AlarmClock,
+}
 
 const ACCENT = "#0E9F6E"
 const INK = "#0f172a"
@@ -55,7 +53,44 @@ export default function WhatsAppPage() {
   const [config, setConfig] = useState<WaPolizasConfig | null>(null)
   const [savingKey, setSavingKey] = useState<WaPolizaKey | null>(null)
 
+  // Plantillas editables de los avisos.
+  const [plantillas, setPlantillas] = useState<WaPlantilla[]>([])
+  const [variables, setVariables] = useState<WaVariable[]>([])
+  const [edits, setEdits] = useState<Record<string, string>>({})
+  const [abierto, setAbierto] = useState<string | null>(null)
+  const [savingTpl, setSavingTpl] = useState<string | null>(null)
+  const [testingTpl, setTestingTpl] = useState<string | null>(null)
+  const [tplMsg, setTplMsg] = useState<{ key: string; ok: boolean; msg: string } | null>(null)
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Render local del preview con datos de ejemplo (mismo SAMPLE que el BE).
+  const SAMPLE: Record<string, string> = { cliente: "Juan", negocio: "Tu Broker", cobertura: "Auto (AB123CD)", fecha: "25/06/2026" }
+  const previewDe = (texto: string) =>
+    String(texto || "").replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => SAMPLE[k] != null ? SAMPLE[k] : "")
+
+  const guardarPlantilla = async (configKey: string) => {
+    setSavingTpl(configKey); setTplMsg(null)
+    try {
+      await whatsappAPI.setPlantillas(token, { [configKey]: edits[configKey] || "" })
+      setPlantillas(ps => ps.map(p => p.configKey === configKey ? { ...p, custom: edits[configKey] || "", preview: previewDe(edits[configKey] || p.default) } : p))
+      setTplMsg({ key: configKey, ok: true, msg: "Plantilla guardada." })
+    } catch (e: any) { setTplMsg({ key: configKey, ok: false, msg: e?.message || "No se pudo guardar." }) }
+    finally { setSavingTpl(null) }
+  }
+  const restaurarPlantilla = (a: WaPlantilla) => { setEdits(ed => ({ ...ed, [a.configKey]: a.default })) }
+  const probarAviso = async (a: WaPlantilla) => {
+    const num = to.trim()
+    if (!num) { setTplMsg({ key: a.configKey, ok: false, msg: "Cargá tu número arriba para probar." }); return }
+    setTestingTpl(a.configKey); setTplMsg(null)
+    try {
+      const r = await whatsappAPI.testAviso(token, a.tipo, num)
+      if (r.ok) setTplMsg({ key: a.configKey, ok: true, msg: "¡Prueba enviada! Revisá tu WhatsApp." })
+      else setTplMsg({ key: a.configKey, ok: false, msg: errLabel(r.error) })
+      await loadHistory(token)
+    } catch (e: any) { setTplMsg({ key: a.configKey, ok: false, msg: e?.message || "No se pudo enviar." }) }
+    finally { setTestingTpl(null) }
+  }
 
   useEffect(() => { setToken(localStorage.getItem("token") || "") }, [])
 
@@ -78,10 +113,16 @@ export default function WhatsAppPage() {
 
   const loadHistory = useCallback(async (tk: string) => {
     try {
-      const [h, u, c] = await Promise.all([whatsappAPI.history(tk), whatsappAPI.usage(tk), whatsappAPI.getConfig(tk)])
+      const [h, u, c, p] = await Promise.all([whatsappAPI.history(tk), whatsappAPI.usage(tk), whatsappAPI.getConfig(tk), whatsappAPI.getPlantillas(tk)])
       if (h.ok) setHistory(h.items || [])
       if (u.ok) setUsage({ enviados: u.enviados, limite: u.limite })
       if (c.ok) setConfig(c.config)
+      if (p.ok) {
+        setPlantillas(p.avisos); setVariables(p.variables)
+        const ed: Record<string, string> = {}
+        for (const a of p.avisos) ed[a.configKey] = a.custom || a.default
+        setEdits(ed)
+      }
     } catch { /* silencioso */ }
   }, [])
 
@@ -227,27 +268,92 @@ export default function WhatsAppPage() {
               </div>
             </div>
 
-            {/* Avisos de póliza automáticos */}
+            {/* Avisos de póliza automáticos — con plantilla editable y prueba */}
             <div className="rounded-2xl border bg-white shadow-sm mt-5 px-5 py-5">
               <div className="flex items-center gap-2 mb-1"><Zap className="h-4 w-4 text-slate-400" /><h2 className="font-bold text-lg" style={{ color: INK }}>Avisos de vencimiento de póliza</h2></div>
-              <p className="text-sm text-slate-500 mb-4">Recordatorios automáticos de renovación a tus asegurados, según la fecha de fin de vigencia.</p>
-              <div className="divide-y">
-                {AVISOS.map((a) => {
-                  const on = !!config?.[a.key]?.enabled
-                  const saving = savingKey === a.key
+              <p className="text-sm text-slate-500 mb-3">
+                Recordatorios automáticos de renovación a tus asegurados, según la fecha de fin de vigencia. Podés <strong>editar cada mensaje</strong> y <strong>probarlo</strong> en tu número.
+              </p>
+
+              {/* Número para probar los avisos */}
+              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-4 p-3 rounded-xl" style={{ background: "rgba(14,159,110,.04)" }}>
+                <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Send className="h-3.5 w-3.5" /> Probar en mi número:</span>
+                <input value={to} onChange={(e) => setTo(e.target.value)} disabled={!isConnected} placeholder="Ej: 11 2345 6789"
+                  className="flex-1 px-3 py-2 rounded-lg border text-sm disabled:bg-slate-50 disabled:text-slate-400 outline-none focus:ring-2"
+                  style={{ ["--tw-ring-color" as any]: ACCENT }} />
+                {!isConnected && <span className="text-[11px] text-slate-400">Conectá WhatsApp primero.</span>}
+              </div>
+
+              <div className="space-y-3">
+                {plantillas.map((a) => {
+                  const Icon = AVISO_ICON[a.configKey] || BellRing
+                  const on = !!config?.[a.configKey as WaPolizaKey]?.enabled
+                  const saving = savingKey === (a.configKey as WaPolizaKey)
+                  const open = abierto === a.configKey
+                  const texto = edits[a.configKey] ?? (a.custom || a.default)
+                  const cambiado = texto !== (a.custom || a.default)
                   return (
-                    <div key={a.key} className="flex items-center gap-3 py-3">
-                      <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(14,159,110,.10)" }}>
-                        <a.icon className="h-4.5 w-4.5" style={{ color: ACCENT }} />
+                    <div key={a.configKey} className="rounded-xl border" style={{ borderColor: "#eef1ee" }}>
+                      {/* Cabecera: ícono, título, cuándo, toggle */}
+                      <div className="flex items-start gap-3 p-3">
+                        <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(14,159,110,.10)" }}>
+                          <Icon className="h-4.5 w-4.5" style={{ color: ACCENT }} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-slate-700">{a.label}</p>
+                          <p className="text-xs text-slate-500 flex items-start gap-1 mt-0.5">
+                            <Info className="h-3 w-3 mt-0.5 flex-shrink-0 text-slate-400" />
+                            <span>{a.cuando}{a.configKey === "polizaProxima" && config ? ` Hoy: ${config.diasProximo} días antes.` : ""}</span>
+                          </p>
+                        </div>
+                        <button onClick={() => !saving && toggleAviso(a.configKey as WaPolizaKey, !on)} disabled={saving} aria-label={a.label}
+                          className="relative h-6 w-11 rounded-full flex-shrink-0 transition-colors mt-0.5" style={{ background: on ? ACCENT : "#cbd5e1" }}>
+                          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? "left-[22px]" : "left-0.5"}`} />
+                        </button>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-slate-700">{a.title}</p>
-                        <p className="text-xs text-slate-500">{a.desc}{a.key === "polizaProxima" && config ? ` (${config.diasProximo} días antes)` : ""}</p>
+
+                      {/* Preview del mensaje + acciones */}
+                      <div className="px-3 pb-3">
+                        <div className="rounded-lg p-2.5 text-[13px] text-slate-700 whitespace-pre-wrap" style={{ background: "#e7f7ee", border: "1px solid rgba(14,159,110,.18)" }}>
+                          {previewDe(texto)}
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <button onClick={() => setAbierto(open ? null : a.configKey)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 px-2.5 py-1.5 rounded-lg border hover:bg-slate-50">
+                            <Pencil className="h-3.5 w-3.5" /> {open ? "Cerrar" : "Editar mensaje"}
+                          </button>
+                          <button onClick={() => probarAviso(a)} disabled={!isConnected || testingTpl === a.configKey} className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg text-white disabled:opacity-50" style={{ background: ACCENT }}>
+                            {testingTpl === a.configKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Probar
+                          </button>
+                          {tplMsg && tplMsg.key === a.configKey && (
+                            <span className={`text-xs flex items-center gap-1 ${tplMsg.ok ? "text-emerald-700" : "text-red-600"}`}>
+                              {tplMsg.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />} {tplMsg.msg}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Editor */}
+                        {open && (
+                          <div className="mt-3 rounded-lg p-3" style={{ background: "rgba(14,159,110,.04)" }}>
+                            <textarea value={texto} onChange={(e) => setEdits(ed => ({ ...ed, [a.configKey]: e.target.value }))}
+                              rows={3} className="w-full px-3 py-2 rounded-lg border text-sm outline-none focus:ring-2 resize-y" style={{ ["--tw-ring-color" as any]: ACCENT }} />
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              <span className="text-[11px] text-slate-400 mr-1">Insertá:</span>
+                              {variables.map(v => (
+                                <button key={v.tag} title={v.desc} onClick={() => setEdits(ed => ({ ...ed, [a.configKey]: (ed[a.configKey] ?? texto) + " " + v.tag }))}
+                                  className="text-[11px] font-mono px-1.5 py-0.5 rounded border bg-white hover:bg-slate-50 text-slate-600">{v.tag}</button>
+                              ))}
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              <button onClick={() => guardarPlantilla(a.configKey)} disabled={savingTpl === a.configKey || !cambiado} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-50" style={{ background: INK }}>
+                                {savingTpl === a.configKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Guardar mensaje
+                              </button>
+                              <button onClick={() => restaurarPlantilla(a)} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border text-slate-600 hover:bg-slate-50">
+                                <RotateCcw className="h-3.5 w-3.5" /> Volver al texto por defecto
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <button onClick={() => !saving && toggleAviso(a.key, !on)} disabled={saving} aria-label={a.title}
-                        className="relative h-6 w-11 rounded-full flex-shrink-0 transition-colors" style={{ background: on ? ACCENT : "#cbd5e1" }}>
-                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? "left-[22px]" : "left-0.5"}`} />
-                      </button>
                     </div>
                   )
                 })}
