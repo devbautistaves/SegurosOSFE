@@ -40,6 +40,7 @@ import {
   Target,
   CreditCard,
   FileText,
+  MessageCircle,
   Monitor,
 } from "lucide-react"
 import {
@@ -731,7 +732,7 @@ export default function AdminDashboardPage() {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
                 <Shield className="h-7 w-7 text-emerald-500" />
-                Dashboard Seguros
+                Panel de Seguros
               </h1>
               <p className="text-sm text-muted-foreground">Resumen general de pólizas, cobranzas y siniestros</p>
             </div>
@@ -742,23 +743,50 @@ export default function AdminDashboardPage() {
             />
           </div>
 
-          {/* Empty-state: si la cuenta no tiene pólizas, empujamos a importar la cartera */}
-          {st && (((st.totalVigentes || 0) + (st.totalAnuladas || 0) + ((st as any).totalARenovar || 0) + ((st as any).totalNoVigentes || 0)) === 0) && (
-            <Link href="/admin/seguros/polizas/importar" className="block">
-              <Card className="border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10 transition-colors cursor-pointer">
-                <CardContent className="p-5 flex items-center gap-4 flex-wrap sm:flex-nowrap">
-                  <div className="h-12 w-12 shrink-0 rounded-xl bg-blue-500/15 flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-blue-500" />
+          {/* Importá tu cartera — paso a paso, siempre visible */}
+          <Card className="border-blue-500/30 bg-gradient-to-br from-blue-500/[0.06] to-transparent overflow-hidden">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="h-11 w-11 shrink-0 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-foreground text-lg leading-tight">Importá tu cartera de pólizas</p>
+                  <p className="text-sm text-muted-foreground">Cargá todas tus pólizas de una, desde un Excel o CSV.</p>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3 mb-5">
+                {[
+                  { n: 1, t: "Descargá la plantilla", d: "Un Excel/CSV con las columnas listas." },
+                  { n: 2, t: "Completala", d: "Pegá tus pólizas en la plantilla." },
+                  { n: 3, t: "Subila acá", d: "Las cargamos todas automáticamente." },
+                ].map(s => (
+                  <div key={s.n} className="rounded-xl border border-blue-500/20 bg-card/60 p-3.5">
+                    <div className="h-7 w-7 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mb-2">{s.n}</div>
+                    <p className="font-semibold text-sm text-foreground">{s.t}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{s.d}</p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-foreground">Todavía no cargaste pólizas — importá tu cartera</p>
-                    <p className="text-sm text-muted-foreground">Subí tu Excel/CSV y cargamos todas tus pólizas de una. ¿Se complica? Soporte la sube por vos, sin costo.</p>
-                  </div>
-                  <Button className="shrink-0 gap-2 bg-blue-600 hover:bg-blue-700">Importar cartera →</Button>
-                </CardContent>
-              </Card>
-            </Link>
-          )}
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2.5">
+                <Link href="/admin/seguros/polizas/importar">
+                  <Button className="gap-2 bg-blue-600 hover:bg-blue-700"><FileText className="h-4 w-4" /> Importar pólizas →</Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                  onClick={() => {
+                    let quien = ""
+                    try { const u = JSON.parse(localStorage.getItem("user") || "null"); if (u) quien = ` Soy ${u.name || u.email || ""}.` } catch {}
+                    const msg = encodeURIComponent(`Hola, necesito que me suban mi cartera de pólizas a SegurOS.${quien} Les paso el archivo por acá.`)
+                    window.open(`https://wa.me/5491135767915?text=${msg}`, "_blank")
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4" /> Que la suba el soporte
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Row 1: Stats generales */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

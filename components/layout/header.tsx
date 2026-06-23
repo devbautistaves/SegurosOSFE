@@ -63,6 +63,9 @@ export function Header({ userName, role, onMenuClick }: HeaderProps) {
     .toUpperCase()
     .slice(0, 2)
 
+  // El rol admin_seguros usa las rutas /admin/* (no existe /admin_seguros/*).
+  const basePath = (role as string) === "admin_seguros" ? "admin" : role
+
   return (
     <header className="sticky top-0 z-30 flex h-14 md:h-16 items-center gap-2 md:gap-4 border-b border-slate-200 bg-white px-3 md:px-6 shadow-sm">
       <Button
@@ -133,7 +136,7 @@ export function Header({ userName, role, onMenuClick }: HeaderProps) {
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href={`/${role}/notifications`} className="w-full text-center text-sm text-primary">
+                  <Link href={`/${basePath}/notifications`} className="w-full text-center text-sm text-primary">
                     Ver todas
                   </Link>
                 </DropdownMenuItem>
@@ -160,10 +163,10 @@ export function Header({ userName, role, onMenuClick }: HeaderProps) {
             {role !== "support" && (
               <>
                 <DropdownMenuItem asChild>
-                  <Link href={`/${role}/settings`}>Perfil</Link>
+                  <Link href={`/${basePath}/settings`}>Perfil</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href={`/${role}/settings`}>Configuracion</Link>
+                  <Link href={`/${basePath}/settings`}>Configuracion</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>

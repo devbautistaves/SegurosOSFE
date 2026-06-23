@@ -7,39 +7,60 @@ import { Loader2, Plus, X, Save, Tag, Building2, CreditCard, Upload, Crown, Imag
 import { MisDatosSection } from "@/components/mis-datos-section"
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+// Etiqueta legible: SAN_CRISTOBAL → San Cristóbal (el valor guardado sigue en MAYÚS_GUIÓN).
+const pretty = (s: string) => s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 text-xs px-2.5 py-1">
-      {label}
-      <button onClick={onRemove} className="hover:text-red-600 leading-none" type="button"><X className="h-3 w-3" /></button>
+    <span className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200/70 bg-blue-50/80 text-blue-800 text-[12.5px] font-medium pl-3 pr-1.5 py-1.5 transition-colors hover:border-blue-300 chip-pop">
+      {pretty(label)}
+      <button
+        onClick={onRemove}
+        type="button"
+        aria-label={`Quitar ${pretty(label)}`}
+        className="grid place-items-center h-5 w-5 rounded-md text-blue-400 transition-colors hover:bg-red-100 hover:text-red-600"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
     </span>
   )
 }
 
 function TagInput({ items, onChange, placeholder }: { items: string[]; onChange: (v: string[]) => void; placeholder: string }) {
   const [val, setVal] = useState("")
+  const norm = val.trim().toUpperCase().replace(/\s+/g, "_")
+  const dup = !!norm && items.includes(norm)
   const add = () => {
-    const v = val.trim().toUpperCase().replace(/\s+/g, "_")
-    if (!v || items.includes(v)) { setVal(""); return }
-    onChange([...items, v]); setVal("")
+    if (!norm || dup) { return }
+    onChange([...items, norm]); setVal("")
   }
   return (
     <>
+      <style>{`@keyframes chipPop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}} .chip-pop{animation:chipPop .18s ease-out both}`}</style>
       <div className="flex gap-2">
         <input
-          className="flex-1 h-9 rounded-md border px-3 text-sm"
+          className="flex-1 h-9 rounded-lg border border-input bg-white px-3 text-sm outline-none transition-shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
           placeholder={placeholder}
           value={val}
           onChange={e => setVal(e.target.value)}
           onKeyDown={e => e.key === "Enter" && (e.preventDefault(), add())}
         />
-        <button onClick={add} type="button" className="h-9 px-3 rounded-md bg-blue-600 text-white text-sm font-medium flex items-center gap-1">
+        <button
+          onClick={add}
+          type="button"
+          disabled={!norm || dup}
+          title={dup ? "Ya está en la lista" : "Agregar (Enter)"}
+          className="h-9 px-3 rounded-lg bg-blue-600 text-white text-sm font-medium flex items-center gap-1 transition-colors hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
           <Plus className="h-4 w-4" /> Agregar
         </button>
       </div>
-      <div className="flex flex-wrap gap-1.5 mt-2 min-h-[28px]">
+      {dup && <p className="text-[11px] text-amber-600 mt-1.5">“{pretty(norm)}” ya está en la lista.</p>}
+      <div className="flex flex-wrap gap-2 mt-3 min-h-[32px]">
         {items.map(i => <Chip key={i} label={i} onRemove={() => onChange(items.filter(x => x !== i))} />)}
-        {items.length === 0 && <p className="text-xs text-muted-foreground">Sin ítems cargados.</p>}
+        {items.length === 0 && (
+          <p className="text-xs text-muted-foreground italic py-1">Todavía no agregaste ninguno. Escribí arriba y tocá Agregar.</p>
+        )}
       </div>
     </>
   )
