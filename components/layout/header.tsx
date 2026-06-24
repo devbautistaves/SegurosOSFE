@@ -160,17 +160,6 @@ export function Header({ userName, role, onMenuClick }: HeaderProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {role !== "support" && (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link href={`/${basePath}/settings`}>Perfil</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href={`/${basePath}/settings`}>Configuracion</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
             <DropdownMenuItem 
               onClick={handleLogout}
               className="text-destructive focus:text-destructive cursor-pointer"
