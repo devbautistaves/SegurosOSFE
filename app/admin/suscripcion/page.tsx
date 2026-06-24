@@ -9,6 +9,31 @@ function fmtMoney(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n)
 }
 
+// Funciones completas del plan PRO (todo ilimitado). Se usa en las tarjetas
+// PROMO y PRO para que el detalle del plan sea real y claro.
+const FEATURES_PRO = [
+  "Pólizas, cobranzas y siniestros ilimitados",
+  "Usuarios ilimitados para tu equipo",
+  "Seguimiento de siniestros por estado (denunciado → finalizado)",
+  "Cobranzas de cuotas con cupón y carga de comprobantes",
+  "Página del cliente con QR: ve sus pólizas, cuotas y siniestros",
+  "Automatizaciones por WhatsApp (vencimientos, cobranzas, siniestros, bienvenida y cumpleaños)",
+  "Avisos automáticos por email a tus clientes",
+  "Importación de cartera desde Excel",
+  "Catálogos personalizables (compañías, ramos, medios de pago)",
+  "Logo y marca propia",
+  "Soporte prioritario",
+]
+
+// Lo que incluye el plan FREE (gratis), con sus límites.
+const FEATURES_FREE = [
+  "Hasta 20 pólizas",
+  "Hasta 20 cobranzas",
+  "Hasta 10 siniestros",
+  "1 usuario",
+  "Página del cliente con QR",
+]
+
 export default function SuscripcionPage() {
   const [estado, setEstado] = useState<SuscripcionEstado | null>(null)
   const [loading, setLoading] = useState(true)
@@ -184,6 +209,18 @@ export default function SuscripcionPage() {
       {/* Planes disponibles */}
       {mostrarPlanes && (
         <>
+        {/* Qué incluye el plan FREE (gratis) + sus límites */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+          <p className="text-sm font-semibold text-slate-700">Plan FREE (gratis)</p>
+          <p className="text-xs text-slate-500 mt-0.5">Para arrancar. Cuando lo necesites, pasá a PRO y sacá los límites.</p>
+          <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-3 text-sm text-slate-600">
+            {FEATURES_FREE.map(f => (
+              <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5" /> {f}</li>
+            ))}
+          </ul>
+          <p className="text-xs text-slate-400 mt-3">WhatsApp, avisos por email y marca propia están disponibles solo en PRO.</p>
+        </div>
+
         {/* PROMO de lanzamiento destacada */}
         {estado.precios.PROMO && (
           <div className="rounded-xl border-2 border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 p-6 relative">
@@ -203,10 +240,9 @@ export default function SuscripcionPage() {
                   </p>
                 )}
                 <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-4 text-sm text-emerald-900">
-                  <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> Todo PRO, ilimitado</li>
-                  <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> Logo y marca propia</li>
-                  <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> Emails automáticos a clientes</li>
-                  <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> Soporte prioritario</li>
+                  {FEATURES_PRO.map(f => (
+                    <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> {f}</li>
+                  ))}
                 </ul>
               </div>
               <button
@@ -260,7 +296,7 @@ export default function SuscripcionPage() {
                 )}
 
                 <ul className="space-y-2 mt-5 text-sm">
-                  {["Pólizas ilimitadas", "Cobranzas y siniestros ilimitados", "Usuarios ilimitados", "Notificaciones automáticas por email", "Catálogos personalizables", "Soporte prioritario"].map(f => (
+                  {FEATURES_PRO.map(f => (
                     <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> {f}</li>
                   ))}
                   {anual && <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> 12 meses, 2 de regalo</li>}
