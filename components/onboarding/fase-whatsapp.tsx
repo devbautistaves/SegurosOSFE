@@ -8,8 +8,19 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { whatsappAPI, type WaStatus } from "@/lib/api"
 import {
   MessageCircle, QrCode, RefreshCw, Loader2, CheckCircle2, XCircle, Send,
-  ArrowRight, ArrowLeft, ShieldCheck, Smartphone,
+  ArrowRight, ArrowLeft, ShieldCheck, Smartphone, Check,
 } from "lucide-react"
+
+// Automatizaciones disponibles (se muestran como lista para que el broker vea
+// todo lo que puede mandar solo). Se prenden/editan en Configuración → WhatsApp.
+const AUTOMS_WA = [
+  "Aviso de póliza por vencer",
+  "Cuotas: próxima a vencer, vence hoy y vencida",
+  "Cambios de estado de siniestros",
+  "Pago confirmado / recibo",
+  "Bienvenida con link a su legajo",
+  "Saludo de cumpleaños",
+]
 
 export function FaseWhatsapp({ onPrev, onComplete }: { onPrev: () => void; onComplete: () => void }) {
   const [token, setToken] = useState("")
@@ -65,8 +76,19 @@ export function FaseWhatsapp({ onPrev, onComplete }: { onPrev: () => void; onCom
         </div>
         <h2 className="text-2xl font-bold text-white">Conectá tu WhatsApp</h2>
         <p className="text-sm text-slate-400 mt-1.5 max-w-md mx-auto">
-          Enviá avisos de vencimiento y renovación automáticos a tus asegurados desde tu propio número. Conectalo ahora y mandate una prueba para ver cómo llegan.
+          Mandá avisos automáticos a tus asegurados desde tu propio número: vencimientos, cobranzas, siniestros, bienvenida y más. Conectalo ahora y probá cómo llegan.
         </p>
+      </div>
+
+      {/* Lista de automatizaciones disponibles */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 mb-4">
+        <p className="text-xs font-semibold text-slate-300 mb-2.5">Lo que vas a poder mandar solo:</p>
+        <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[13px] text-slate-300">
+          {AUTOMS_WA.map((a) => (
+            <li key={a} className="flex gap-2"><Check className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" /> {a}</li>
+          ))}
+        </ul>
+        <p className="text-[11px] text-slate-500 mt-2.5">Vienen apagadas: prendés y editás las que quieras en Configuración → WhatsApp.</p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
