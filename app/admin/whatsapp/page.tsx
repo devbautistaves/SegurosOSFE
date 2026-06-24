@@ -109,6 +109,16 @@ export default function WhatsAppPage() {
     finally { setSavingKey(null) }
   }
 
+  // Avisos "próximos a vencer" cuyo "días antes" es configurable por el admin.
+  const DIAS_FIELD: Record<string, string> = { polizaProxima: "diasProximo", cuotaProxima: "diasCuotaProximo" }
+  const guardarDias = async (field: string, val: number) => {
+    if (!config || !val || val < 1) return
+    const prev = config
+    setConfig({ ...config, [field]: val } as any)
+    try { const r = await whatsappAPI.setConfig(token, { [field]: val } as any); if (r.ok) setConfig(r.config) }
+    catch { setConfig(prev) }
+  }
+
   const refresh = useCallback(async (tk: string) => {
     try {
       const r = await whatsappAPI.status(tk)
@@ -327,6 +337,7 @@ export default function WhatsAppPage() {
                   const open = abierto === a.configKey
                   const texto = edits[a.configKey] ?? (a.custom || a.default)
                   const cambiado = texto !== (a.custom || a.default)
+                  const diasField = DIAS_FIELD[a.configKey]
                   return (
                     <div key={a.configKey} className="rounded-xl border" style={{ borderColor: "#eef1ee" }}>
                       {/* Cabecera: ícono, título, cuándo, toggle */}
@@ -338,7 +349,21 @@ export default function WhatsAppPage() {
                           <p className="text-sm font-semibold text-slate-700">{a.label}</p>
                           <p className="text-xs text-slate-500 flex items-start gap-1 mt-0.5">
                             <Info className="h-3 w-3 mt-0.5 flex-shrink-0 text-slate-400" />
-                            <span>{a.cuando}{a.configKey === "polizaProxima" && config ? ` Hoy: ${config.diasProximo} días antes.` : ""}</span>
+                            <span>
+                              {a.cuando}
+                              {diasField && config ? (
+                                <span className="inline-flex items-center gap-1 ml-1 align-middle">
+                                  Avisar
+                                  <input type="number" min={1} max={diasField === "diasProximo" ? 60 : 15}
+                                    value={(config as any)[diasField] ?? ""}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => setConfig({ ...(config as any), [diasField]: parseInt(e.target.value) || 0 })}
+                                    onBlur={(e) => guardarDias(diasField, parseInt(e.target.value) || 0)}
+                                    className="w-11 px-1 py-0.5 rounded border text-center text-xs" style={{ borderColor: "#e2e8f0" }} />
+                                  días antes.
+                                </span>
+                              ) : ""}
+                            </span>
                           </p>
                         </div>
                         <button onClick={() => !saving && toggleAviso(a.configKey as WaPolizaKey, !on)} disabled={saving} aria-label={a.label}
