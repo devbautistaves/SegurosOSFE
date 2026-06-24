@@ -8,6 +8,13 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -116,6 +123,7 @@ export default function AdminDashboardPage() {
   const today = new Date()
   const [segurosYear, setSegurosYear]   = useState(today.getFullYear())
   const [segurosMonth, setSegurosMonth] = useState(today.getMonth()) // 0-indexed
+  const [importOpen, setImportOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -743,19 +751,32 @@ export default function AdminDashboardPage() {
             />
           </div>
 
-          {/* Importá tu cartera — paso a paso, siempre visible */}
-          <Card className="border-blue-500/30 bg-gradient-to-br from-blue-500/[0.06] to-transparent overflow-hidden">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="h-11 w-11 shrink-0 rounded-xl bg-blue-500/15 flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-foreground text-lg leading-tight">Importá tu cartera de pólizas</p>
-                  <p className="text-sm text-muted-foreground">Cargá todas tus pólizas de una, desde un Excel o CSV.</p>
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-3 gap-3 mb-5">
+          {/* Importá tu cartera — abre en modal */}
+          <div>
+            <Button
+              size="lg"
+              className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-md"
+              onClick={() => setImportOpen(true)}
+            >
+              <FileText className="h-5 w-5" /> Subí tu cartera fácil
+            </Button>
+          </div>
+
+          <Dialog open={importOpen} onOpenChange={setImportOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <span className="h-11 w-11 shrink-0 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                    <FileText className="h-6 w-6 text-blue-600" />
+                  </span>
+                  <span className="leading-tight">Importá tu cartera de pólizas</span>
+                </DialogTitle>
+                <DialogDescription>
+                  Cargá todas tus pólizas de una, desde un Excel o CSV.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid sm:grid-cols-3 gap-3 my-2">
                 {[
                   { n: 1, t: "Descargá la plantilla", d: "Un Excel/CSV con las columnas listas." },
                   { n: 2, t: "Completala", d: "Pegá tus pólizas en la plantilla." },
@@ -768,8 +789,9 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
               </div>
+
               <div className="flex flex-wrap gap-2.5">
-                <Link href="/admin/seguros/polizas/importar">
+                <Link href="/admin/seguros/polizas/importar" onClick={() => setImportOpen(false)}>
                   <Button className="gap-2 bg-blue-600 hover:bg-blue-700"><FileText className="h-4 w-4" /> Importar pólizas →</Button>
                 </Link>
                 <Button
@@ -785,8 +807,8 @@ export default function AdminDashboardPage() {
                   <MessageCircle className="h-4 w-4" /> Que la suba el soporte
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </DialogContent>
+          </Dialog>
 
           {/* Row 1: Stats generales */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
