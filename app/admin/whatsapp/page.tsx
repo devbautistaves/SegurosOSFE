@@ -317,7 +317,7 @@ export default function WhatsAppPage() {
             <div className="rounded-2xl border bg-white shadow-sm mt-5 px-5 py-5">
               <div className="flex items-center gap-2 mb-1"><Zap className="h-4 w-4 text-slate-400" /><h2 className="font-bold text-lg" style={{ color: INK }}>Automatizaciones de WhatsApp</h2></div>
               <p className="text-sm text-slate-500 mb-3">
-                Recordatorios automáticos de renovación a tus asegurados, según la fecha de fin de vigencia. Podés <strong>editar cada mensaje</strong> y <strong>probarlo</strong> en tu número.
+                Avisos automáticos a tus asegurados según el <strong>vencimiento de la cuota</strong> (sistema de cobranzas) y otros eventos. Podés <strong>editar cada mensaje</strong> y <strong>probarlo</strong> en tu número.
               </p>
 
               {/* Número para probar los avisos */}
@@ -330,7 +330,8 @@ export default function WhatsAppPage() {
               </div>
 
               <div className="space-y-3">
-                {plantillas.map((a) => {
+                {/* Solo cobranzas + eventos: los avisos de renovación de póliza (poliza*) no se muestran. */}
+                {plantillas.filter((a) => !a.configKey.startsWith("poliza")).map((a) => {
                   const Icon = AVISO_ICON[a.configKey] || BellRing
                   const on = !!config?.[a.configKey as WaPolizaKey]?.enabled
                   const saving = savingKey === (a.configKey as WaPolizaKey)
