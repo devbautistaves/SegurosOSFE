@@ -11,7 +11,7 @@ export function PromoMundialistaPopup() {
     if (localStorage.getItem(POPUP_KEY)) return
     const token = localStorage.getItem("token")
     if (!token) return
-    fetch("/api/suscripcion/estado", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/proxy/suscripcion/estado", { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
       .then(j => { if (j?.planCodigo === "TRIAL") setVisible(true) })
       .catch(() => {})
