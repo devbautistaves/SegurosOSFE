@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, Suspense, useRef } from "react"
+import { useEffect, useState, Suspense, useRef, useMemo, Fragment } from "react"
 import { useSearchParams } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,7 +24,7 @@ import { segurosAPI, Poliza, suscripcionAPI, SuscripcionEstado } from "@/lib/api
 import { buscarLocalidad, type LocalidadAR } from "@/lib/localidades-ar"
 import {
   Shield, Plus, Search, Filter, Edit2, Trash2, X, CheckCircle2,
-  XCircle, Clock, Car, Bike, Home, User, Banknote, ChevronLeft, ChevronRight,
+  XCircle, Clock, Car, Bike, Home, User, Banknote, ChevronLeft, ChevronRight, ChevronDown,
   Loader2, UserCheck, MapPin, Crown, Sparkles, Zap, RefreshCw, Upload, IdCard,
 } from "lucide-react"
 import Link from "next/link"
@@ -138,6 +138,21 @@ function PolizasPageInner() {
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  // Agrupación por cliente: pólizas con el mismo DNI se muestran juntas bajo un
+  // encabezado colapsable. Las sin DNI o únicas van como fila suelta. Por defecto
+  // los grupos están abiertos (no se oculta nada).
+  const [gruposColapsados, setGruposColapsados] = useState<Set<string>>(new Set())
+  const toggleGrupo = (k: string) => setGruposColapsados(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n })
+  const renderItems = useMemo(() => {
+    const m = new Map<string, Poliza[]>()
+    for (const p of polizas) {
+      const d = (p.dni || "").trim()
+      const key = d ? `dni:${d}` : `solo:${p._id}`
+      if (!m.has(key)) m.set(key, [])
+      m.get(key)!.push(p)
+    }
+    return Array.from(m.entries()).map(([key, ps]) => ({ key, dni: (ps[0].dni || "").trim(), ps, grouped: !!(ps[0].dni || "").trim() && ps.length > 1 }))
+  }, [polizas])
 
   const toggleSeleccion = (id: string) => setSeleccion(prev => {
     const next = new Set(prev)
@@ -636,8 +651,9 @@ function PolizasPageInner() {
                     </tr>
                   </thead>
                   <tbody>
-                    {polizas.map(p => (
-                      <tr key={p._id} className={cn("border-b border-border/50 hover:bg-secondary/30 transition-colors", seleccion.has(p._id) && "bg-emerald-500/5")}>
+                    {renderItems.map(item => {
+                      const fila = (p: Poliza) => (
+                      <tr key={p._id} className={cn("border-b border-border/50 hover:bg-secondary/30 transition-colors", seleccion.has(p._id) && "bg-emerald-500/5", item.grouped && "bg-secondary/10")}>
                         <td className="py-3 px-3">
                           <input
                             type="checkbox"
@@ -690,7 +706,23 @@ function PolizasPageInner() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      )
+                      if (!item.grouped) return <Fragment key={item.key}>{item.ps.map(fila)}</Fragment>
+                      const abierto = !gruposColapsados.has(item.key)
+                      return (
+                        <Fragment key={item.key}>
+                          <tr className="border-b border-border bg-secondary/40 hover:bg-secondary/60 cursor-pointer" onClick={() => toggleGrupo(item.key)}>
+                            <td className="py-2.5 px-3 text-center">{abierto ? <ChevronDown className="h-4 w-4 inline text-muted-foreground" /> : <ChevronRight className="h-4 w-4 inline text-muted-foreground" />}</td>
+                            <td className="py-2.5 px-3" colSpan={9}>
+                              <span className="font-semibold">{item.ps[0].nombreApellido}</span>
+                              <span className="text-xs text-muted-foreground ml-2">DNI {item.dni}</span>
+                              <span className="ml-2 inline-flex items-center rounded-full bg-emerald-500/15 text-emerald-700 text-xs px-2 py-0.5 font-medium">{item.ps.length} pólizas</span>
+                            </td>
+                          </tr>
+                          {abierto && item.ps.map(fila)}
+                        </Fragment>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
