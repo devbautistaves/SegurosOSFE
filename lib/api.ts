@@ -959,6 +959,7 @@ export interface WaPolizasConfig {
   polizaVenceHoy: { enabled: boolean }
   polizaVencida: { enabled: boolean }
   diasProximo: number
+  horarioEnvios?: { desde: number; hasta: number }
 }
 export interface WaVariable { tag: string; desc: string }
 export interface WaPlantilla { tipo: string; configKey: string; label: string; cuando: string; default: string; custom: string; preview: string }
