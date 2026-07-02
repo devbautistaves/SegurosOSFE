@@ -14,7 +14,7 @@ import {
   Zap, BellRing, CalendarClock, AlarmClock, Pencil, RotateCcw, Info, Crown, Lock,
 } from "lucide-react"
 
-const WA_TRIAL_LIMIT = 25 // avisos reales gratis en el plan trial
+const WA_TRIAL_LIMIT = 10 // WhatsApp gratis en el plan de prueba (incluye los de prueba)
 
 // Íconos por tipo de aviso (la metadata —título/cuándo/plantilla— viene del BE).
 const AVISO_ICON: Record<string, any> = {
@@ -66,7 +66,7 @@ export default function WhatsAppPage() {
   const [testingTpl, setTestingTpl] = useState<string | null>(null)
   const [tplMsg, setTplMsg] = useState<{ key: string; ok: boolean; msg: string } | null>(null)
 
-  // Límite del plan trial: 25 avisos reales, después solo PRO.
+  // Límite del plan trial: 10 avisos reales, después solo PRO.
   const [trial, setTrial] = useState<{ enTrial: boolean; usados: number; bloqueado: boolean }>({ enTrial: false, usados: 0, bloqueado: false })
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -217,7 +217,7 @@ export default function WhatsAppPage() {
           </div>
         </div>
 
-        {/* Paywall del plan trial: bloqueado al llegar a 25 avisos reales */}
+        {/* Paywall del plan trial: bloqueado al llegar a 10 avisos reales */}
         {trial.bloqueado && (
           <div className="rounded-2xl border mb-5 px-5 py-4 flex items-start gap-3" style={{ background: "rgba(176,138,62,.08)", borderColor: "rgba(176,138,62,.3)" }}>
             <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(176,138,62,.16)" }}>
@@ -225,7 +225,7 @@ export default function WhatsAppPage() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-bold text-sm" style={{ color: INK }}>Llegaste a los {WA_TRIAL_LIMIT} avisos de WhatsApp de la prueba</p>
-              <p className="text-xs text-slate-500 mt-0.5">Para seguir enviando avisos automáticos a tus asegurados, suscribite al plan PRO. Tu número y tus mensajes quedan guardados.</p>
+              <p className="text-xs text-slate-500 mt-0.5">Este gran servicio automático trabaja por vos: los avisos salen solos a tus asegurados. Para seguir usándolo, suscribite al plan PRO — tu número y tus mensajes quedan guardados.</p>
               <Link href="/admin/suscripcion" className="inline-flex items-center gap-1.5 mt-2.5 px-3.5 py-2 rounded-lg text-white text-xs font-semibold" style={{ background: ACCENT }}>
                 <Crown className="h-3.5 w-3.5" /> Suscribirme a PRO
               </Link>
