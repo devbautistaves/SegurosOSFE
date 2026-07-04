@@ -3,6 +3,7 @@ import { InstallAppPrompt } from "@/components/install-app-prompt"
 import { PlanBanner } from "@/components/plan-banner"
 import { PromoMundialistaPopup } from "@/components/promo-mundialista-popup"
 import { PWARegister } from "@/components/pwa-register"
+import { TrialLimitPopup } from "@/components/trial-limit-popup"
 
 export default function AdminLayout({
   children,
@@ -19,6 +20,7 @@ export default function AdminLayout({
           se removió — el reabrir se hace disparando "onboarding-reopen". */}
       <OnboardingTrigger />
       <InstallAppPrompt />
+      <TrialLimitPopup />
       {children}
     </>
   )

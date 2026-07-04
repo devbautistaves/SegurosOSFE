@@ -107,6 +107,10 @@ async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}): Promis
   }
 
   if (!response.ok) {
+    // Tope del plan de PRUEBA → popup de upsell (además del throw normal)
+    if (data?.code === "TRIAL_LIMIT" && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("trial-limit-reached", { detail: { recurso: data.recurso, limite: data.limite, uso: data.uso, upgradeUrl: data.upgradeUrl } }))
+    }
     // 401 sin expired: token corrupto / sin auth → login limpio
     if (response.status === 401) {
       forceLogoutToLogin()
