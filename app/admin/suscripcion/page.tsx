@@ -25,10 +25,11 @@ const FEATURES_PRO = [
   "Soporte prioritario",
 ]
 
-// PRO + Multicotizador: todo lo de PRO más la cotización simultánea.
-const FEATURES_MULTICOTIZADOR = [
-  ...FEATURES_PRO,
-  "Multicotización simultánea hasta 5 compañías",
+// PRO + Multicotizador: todo lo de PRO más el módulo de cotización múltiple.
+const FEATURES_MULTI = [
+  "Todo lo del plan PRO, sin límites",
+  "🔥 Multicotizador: cotizá en varias compañías a la vez",
+  "Comparación de precios y coberturas lado a lado",
 ]
 
 // Lo que incluye el plan FREE (gratis), con sus límites.
@@ -94,7 +95,7 @@ export default function SuscripcionPage() {
 
   // Click directo: pegamos al BE, recibimos init_point (plan template MP) y
   // redirigimos. MP usa el email de la cuenta del broker — sin modal de email.
-  const checkout = async (plan: "PRO_MENSUAL" | "PRO_ANUAL" | "PROMO" | "PRO_MULTICOTIZADOR") => {
+  const checkout = async (plan: "PRO_MENSUAL" | "PRO_ANUAL" | "PROMO" | "PRO_MULTICOTIZADOR" | "PRO_MULTICOTIZADOR_ANUAL") => {
     const token = localStorage.getItem("token")
     if (!token) return
     setCheckoutLoading(plan)
@@ -125,7 +126,7 @@ export default function SuscripcionPage() {
 
   const enTrial = !!(estado.trial && !estado.trial.vencido && estado.planCodigo === "TRIAL")
   const diasTrial = estado.trial?.diasRestantes ?? null
-  const tienePlanPago = ["PROMO", "PRO_MENSUAL", "PRO_ANUAL", "PRO_MULTICOTIZADOR"].includes(estado.planCodigo ?? "")
+  const tienePlanPago = ["PROMO", "PRO_MENSUAL", "PRO_ANUAL", "PRO_MULTICOTIZADOR", "PRO_MULTICOTIZADOR_ANUAL"].includes(estado.planCodigo ?? "")
   const esPRO = tienePlanPago || (estado.plan === "PRO" && estado.planStatus === "ACTIVO")
   // Mostramos los planes para contratar si NO tiene un plan pago real
   // (incluye trial y vencido: queremos que enganchen la PROMO antes de que se
@@ -316,39 +317,58 @@ export default function SuscripcionPage() {
                   {checkoutLoading === plan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
                 </button>
               </div>
+
+              {/* PRO + Multicotizador */}
+              {(() => {
+                const multiMensual = estado.precios.PRO_MULTICOTIZADOR?.monto || 0
+                const multiAnual = estado.precios.PRO_MULTICOTIZADOR_ANUAL?.monto || 0
+                if (!multiMensual && !multiAnual) return null
+                const multiEquiv = multiAnual ? Math.round(multiAnual / 12) : 0
+                const multiPlan = anual ? "PRO_MULTICOTIZADOR_ANUAL" : "PRO_MULTICOTIZADOR"
+                const multiDisponible = anual ? multiAnual > 0 : multiMensual > 0
+                return (
+                  <div className="rounded-xl border-2 border-violet-600 bg-violet-50 p-6 relative max-w-md mx-auto">
+                    <div className="absolute -top-3 left-6 bg-violet-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                      PRO + Multicotizador
+                    </div>
+                    <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">Todo PRO + cotización múltiple</p>
+                    <div className="flex items-end gap-2 mt-2">
+                      <p className="text-4xl font-bold">{fmtMoney(anual ? multiEquiv : multiMensual)}</p>
+                      <span className="text-sm text-muted-foreground mb-1">por mes</span>
+                    </div>
+                    {anual ? (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        <s>{fmtMoney(multiMensual)}/mes</s> · facturado anualmente <b className="text-violet-700">{fmtMoney(multiAnual)}</b>
+                      </p>
+                    ) : (
+                      <p className="text-sm text-violet-700 font-medium mt-1">Pasate a anual y ahorrá 2 meses</p>
+                    )}
+
+                    <ul className="space-y-2 mt-5 text-sm">
+                      {FEATURES_MULTI.map(f => (
+                        <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-violet-600 flex-shrink-0 mt-0.5" /> {f}</li>
+                      ))}
+                    </ul>
+
+                    {multiDisponible ? (
+                      <button
+                        onClick={() => checkout(multiPlan)}
+                        disabled={checkoutLoading !== null}
+                        className="w-full h-11 mt-6 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+                      >
+                        {checkoutLoading === multiPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
+                      </button>
+                    ) : (
+                      <button disabled className="w-full h-11 mt-6 rounded-md font-semibold bg-slate-200 text-slate-500 flex items-center justify-center gap-2">
+                        Próximamente
+                      </button>
+                    )}
+                  </div>
+                )
+              })()}
             </>
           )
         })()}
-
-        {/* PRO + Multicotizador */}
-        {estado.precios.PRO_MULTICOTIZADOR && (
-          <div className="rounded-xl border-2 border-violet-600 bg-violet-50 p-6 relative max-w-md mx-auto">
-            <div className="absolute -top-3 left-6 bg-violet-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-              Multicotizador
-            </div>
-            <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">PRO + multicotización</p>
-            <div className="flex items-end gap-2 mt-2">
-              <p className="text-4xl font-bold">{fmtMoney(estado.precios.PRO_MULTICOTIZADOR.monto)}</p>
-              <span className="text-sm text-muted-foreground mb-1">por mes</span>
-            </div>
-            <p className="text-sm text-violet-700 font-medium mt-1">Todo PRO + cotizá en hasta 5 compañías a la vez</p>
-
-            <ul className="space-y-2 mt-5 text-sm">
-              {FEATURES_MULTICOTIZADOR.map(f => (
-                <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-violet-600 flex-shrink-0 mt-0.5" /> {f}</li>
-              ))}
-            </ul>
-            <p className="text-xs text-violet-700/70 mt-3">El multicotizador se activa automáticamente en tu cuenta apenas esté disponible — estamos completando las integraciones con las compañías.</p>
-
-            <button
-              onClick={() => checkout("PRO_MULTICOTIZADOR")}
-              disabled={checkoutLoading !== null}
-              className="w-full h-11 mt-6 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              {checkoutLoading === "PRO_MULTICOTIZADOR" ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
-            </button>
-          </div>
-        )}
         </>
       )}
 
