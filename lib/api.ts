@@ -903,7 +903,7 @@ export interface SuscripcionEstado {
   planTipo: "mensual" | "anual" | null
   planVencimiento?: string | null
   // Pricing v2 (Fase A)
-  planCodigo?: "TRIAL" | "PROMO" | "PRO_MENSUAL" | "PRO_ANUAL" | "VENCIDO"
+  planCodigo?: "TRIAL" | "PROMO" | "PRO_MENSUAL" | "PRO_ANUAL" | "PRO_MULTICOTIZADOR" | "VENCIDO"
   trialFinaliza?: string | null
   promoFinaliza?: string | null
   trial?: {
@@ -911,10 +911,12 @@ export interface SuscripcionEstado {
     diasRestantes: number | null
     vencido: boolean
   } | null
+  multicotizador?: boolean
   precios: {
     PROMO?:      { id: string; monto: number; montoFinal?: number; descripcion: string }
     PRO_MENSUAL: { id: string; monto: number; descripcion: string }
     PRO_ANUAL:   { id: string; monto: number; descripcion: string }
+    PRO_MULTICOTIZADOR?: { id: string; monto: number; descripcion: string }
   }
   uso:     { polizas: number; cobranzas: number; siniestros: number; usuarios: number }
   limites: { polizas: number | null; cobranzas: number | null; siniestros: number | null; usuarios: number | null }
@@ -923,7 +925,7 @@ export interface SuscripcionEstado {
 export const suscripcionAPI = {
   estado: (token: string) =>
     fetchAPI<{ success: boolean } & SuscripcionEstado>("/api/suscripcion/estado", { token }),
-  checkout: (token: string, plan: "PRO_MENSUAL" | "PRO_ANUAL" | "PROMO") =>
+  checkout: (token: string, plan: "PRO_MENSUAL" | "PRO_ANUAL" | "PROMO" | "PRO_MULTICOTIZADOR") =>
     fetchAPI<{ success: boolean; init_point: string; preapprovalPlanId?: string; preapprovalId?: string; preferenceId?: string; tipo: string }>(
       "/api/suscripcion/checkout",
       { method: "POST", body: JSON.stringify({ plan }), token }

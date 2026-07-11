@@ -25,6 +25,12 @@ const FEATURES_PRO = [
   "Soporte prioritario",
 ]
 
+// PRO + Multicotizador: todo lo de PRO más la cotización simultánea.
+const FEATURES_MULTICOTIZADOR = [
+  ...FEATURES_PRO,
+  "Multicotización simultánea hasta 5 compañías",
+]
+
 // Lo que incluye el plan FREE (gratis), con sus límites.
 const FEATURES_FREE = [
   "Hasta 20 pólizas",
@@ -88,7 +94,7 @@ export default function SuscripcionPage() {
 
   // Click directo: pegamos al BE, recibimos init_point (plan template MP) y
   // redirigimos. MP usa el email de la cuenta del broker — sin modal de email.
-  const checkout = async (plan: "PRO_MENSUAL" | "PRO_ANUAL" | "PROMO") => {
+  const checkout = async (plan: "PRO_MENSUAL" | "PRO_ANUAL" | "PROMO" | "PRO_MULTICOTIZADOR") => {
     const token = localStorage.getItem("token")
     if (!token) return
     setCheckoutLoading(plan)
@@ -119,7 +125,7 @@ export default function SuscripcionPage() {
 
   const enTrial = !!(estado.trial && !estado.trial.vencido && estado.planCodigo === "TRIAL")
   const diasTrial = estado.trial?.diasRestantes ?? null
-  const tienePlanPago = ["PROMO", "PRO_MENSUAL", "PRO_ANUAL"].includes(estado.planCodigo ?? "")
+  const tienePlanPago = ["PROMO", "PRO_MENSUAL", "PRO_ANUAL", "PRO_MULTICOTIZADOR"].includes(estado.planCodigo ?? "")
   const esPRO = tienePlanPago || (estado.plan === "PRO" && estado.planStatus === "ACTIVO")
   // Mostramos los planes para contratar si NO tiene un plan pago real
   // (incluye trial y vencido: queremos que enganchen la PROMO antes de que se
@@ -168,7 +174,7 @@ export default function SuscripcionPage() {
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">Plan actual</p>
-            <p className="text-3xl font-bold">{esPRO ? "PRO" : enTrial ? "Prueba PRO" : "FREE"}</p>
+            <p className="text-3xl font-bold">{estado.multicotizador ? "PRO + Multicotizador" : esPRO ? "PRO" : enTrial ? "Prueba PRO" : "FREE"}</p>
             {enTrial && diasTrial != null && (
               <p className="text-sm text-blue-700 font-medium mt-1">{diasTrial} {diasTrial === 1 ? "día restante" : "días restantes"}</p>
             )}
@@ -313,6 +319,36 @@ export default function SuscripcionPage() {
             </>
           )
         })()}
+
+        {/* PRO + Multicotizador */}
+        {estado.precios.PRO_MULTICOTIZADOR && (
+          <div className="rounded-xl border-2 border-violet-600 bg-violet-50 p-6 relative max-w-md mx-auto">
+            <div className="absolute -top-3 left-6 bg-violet-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+              Multicotizador
+            </div>
+            <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">PRO + multicotización</p>
+            <div className="flex items-end gap-2 mt-2">
+              <p className="text-4xl font-bold">{fmtMoney(estado.precios.PRO_MULTICOTIZADOR.monto)}</p>
+              <span className="text-sm text-muted-foreground mb-1">por mes</span>
+            </div>
+            <p className="text-sm text-violet-700 font-medium mt-1">Todo PRO + cotizá en hasta 5 compañías a la vez</p>
+
+            <ul className="space-y-2 mt-5 text-sm">
+              {FEATURES_MULTICOTIZADOR.map(f => (
+                <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-violet-600 flex-shrink-0 mt-0.5" /> {f}</li>
+              ))}
+            </ul>
+            <p className="text-xs text-violet-700/70 mt-3">El multicotizador se activa automáticamente en tu cuenta apenas esté disponible — estamos completando las integraciones con las compañías.</p>
+
+            <button
+              onClick={() => checkout("PRO_MULTICOTIZADOR")}
+              disabled={checkoutLoading !== null}
+              className="w-full h-11 mt-6 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              {checkoutLoading === "PRO_MULTICOTIZADOR" ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
+            </button>
+          </div>
+        )}
         </>
       )}
 

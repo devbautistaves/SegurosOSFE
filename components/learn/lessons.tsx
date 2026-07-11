@@ -12,6 +12,7 @@ import { CronTimeline } from "./cron-timeline"
 import {
   ShieldAlert, MailCheck, CalendarClock, RefreshCw, AlertTriangle,
   Clock, CheckCircle2, XCircle, FileWarning, CreditCard, MousePointerClick,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react"
 
@@ -144,6 +145,32 @@ export function SiniestrosLesson() {
   )
 }
 
+// ── Reveal: avisos automáticos por WhatsApp ──────────────────────────────────
+export function WhatsAppAvisosReveal() {
+  return (
+    <RevealCard
+      icon={<MessageCircle className="h-4 w-4" />}
+      eyebrow="Lo que pasa detrás"
+      title="WhatsApp: avisos automáticos a tus asegurados"
+      subtitle="Conectás tu WhatsApp una vez y SegurOS le escribe solo al asegurado en cada momento clave: pólizas, cuotas y siniestros."
+    >
+      <div className="space-y-4">
+        <CronTimeline
+          steps={[
+            { icon: <ShieldAlert className="h-3.5 w-3.5" />, tone: "accent", title: "Pólizas por vencer", detail: "Aviso antes, el día que vence y si queda vencida." },
+            { icon: <CreditCard className="h-3.5 w-3.5" />, tone: "accent", title: "Cuotas por vencer", detail: "El mismo esquema de 3 avisos, pero para cada cuota de cobranza." },
+            { icon: <AlertTriangle className="h-3.5 w-3.5" />, tone: "ok", title: "Siniestros", detail: "Aviso automático cada vez que actualizás el estado de un siniestro." },
+          ]}
+        />
+        <div className="rounded-lg p-3 text-[12.5px] flex items-start gap-2" style={{ background: "color-mix(in srgb, var(--turnos-accent) 10%, transparent)", color: "var(--turnos-accent-ink)" }}>
+          <MessageCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>También manda <b>Pago confirmado</b>, <b>Bienvenida</b> a cada cliente nuevo, saludo de <b>Cumpleaños</b> y aviso de <b>Anulación</b> de póliza. Conectá tu WhatsApp y editá cada mensaje desde <b>WhatsApp</b> en el menú.</span>
+        </div>
+      </div>
+    </RevealCard>
+  )
+}
+
 // ── Registro de lecciones para la Academia ───────────────────────────────────
 export interface LessonMeta {
   key: string
@@ -159,6 +186,7 @@ export const LESSONS: LessonMeta[] = [
   { key: "cobranzas",  title: "Cobranzas en efectivo", summary: "Cómo se crean las cobranzas, marcás pagos y enviás recordatorios.",                   icon: CreditCard,    minutos: 2 },
   { key: "renovacion", title: "Renovar pólizas",       summary: "De A renovar a una nueva vigencia, sin recargar los datos del cliente.",              icon: Clock,         minutos: 1 },
   { key: "siniestros", title: "Siniestros y seguimiento", summary: "Cargá un siniestro, seguilo en trámite y mantené el historial del asegurado.",     icon: AlertTriangle, minutos: 2 },
+  { key: "whatsapp",   title: "WhatsApp: avisos automáticos", summary: "Pólizas, cuotas, siniestros, pagos, bienvenida y cumpleaños: todo por WhatsApp solo.", icon: MessageCircle, minutos: 1 },
 ]
 
 /** Render del contenido de una lección por key (reusado por la Academia). */
@@ -169,6 +197,7 @@ export function LessonContent({ lessonKey, ctx }: { lessonKey: string; ctx: { no
     case "cobranzas":  return <CobranzasLesson />
     case "renovacion": return <RenovacionLesson />
     case "siniestros": return <SiniestrosLesson />
+    case "whatsapp":   return <WhatsAppAvisosReveal />
     default:           return null
   }
 }
