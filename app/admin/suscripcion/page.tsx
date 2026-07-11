@@ -228,50 +228,24 @@ export default function SuscripcionPage() {
           <p className="text-xs text-slate-400 mt-3">WhatsApp, avisos por email y marca propia están disponibles solo en PRO.</p>
         </div>
 
-        {/* PROMO de lanzamiento destacada */}
-        {estado.precios.PROMO && (
-          <div className="rounded-xl border-2 border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 p-6 relative">
-            <div className="absolute -top-3 left-6 bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-              🔥 Promo de lanzamiento
-            </div>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide font-semibold text-emerald-700">{estado.precios.PROMO.descripcion}</p>
-                <div className="flex items-end gap-2 mt-2">
-                  <p className="text-4xl font-bold text-emerald-900">{fmtMoney(estado.precios.PROMO.monto)}</p>
-                  <p className="text-sm text-emerald-700 mb-1">/ mes · primeros 3 meses</p>
-                </div>
-                {estado.precios.PROMO.montoFinal && (
-                  <p className="text-sm text-emerald-700/80 mt-1">
-                    Después pasás a PRO Mensual ({fmtMoney(estado.precios.PROMO.montoFinal)}/mes). Cancelás cuando quieras.
-                  </p>
-                )}
-                <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-4 text-sm text-emerald-900">
-                  {FEATURES_PRO.map(f => (
-                    <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> {f}</li>
-                  ))}
-                </ul>
-              </div>
-              <button
-                onClick={() => checkout("PROMO")}
-                disabled={checkoutLoading !== null}
-                className="md:w-56 h-12 rounded-md font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white flex-shrink-0"
-              >
-                {checkoutLoading === "PROMO" ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Aprovechar la promo <ExternalLink className="h-4 w-4" /></>}
-              </button>
-            </div>
-          </div>
-        )}
-
         {(() => {
           const anual = ciclo === "anual"
           const mensualMonto = estado.precios.PRO_MENSUAL?.monto || 0
           const anualMonto = estado.precios.PRO_ANUAL?.monto || 0
           const equiv = anualMonto ? Math.round(anualMonto / 12) : 0
           const plan = anual ? "PRO_ANUAL" : "PRO_MENSUAL"
+          const multiMensual = estado.precios.PRO_MULTICOTIZADOR?.monto || 0
+          const multiAnual = estado.precios.PRO_MULTICOTIZADOR_ANUAL?.monto || 0
+          const multiEquiv = multiAnual ? Math.round(multiAnual / 12) : 0
+          const multiPlan = anual ? "PRO_MULTICOTIZADOR_ANUAL" : "PRO_MULTICOTIZADOR"
+          const multiDisponible = anual ? multiAnual > 0 : multiMensual > 0
+          const hayMulti = !!(multiMensual || multiAnual)
+          const hayPromo = !!estado.precios.PROMO
+          const cols = (hayPromo ? 1 : 0) + 1 + (hayMulti ? 1 : 0)
+          const gridCls = cols >= 3 ? "md:grid-cols-3" : cols === 2 ? "md:grid-cols-2 max-w-2xl mx-auto" : "max-w-md mx-auto"
           return (
             <>
-              {/* Toggle Mensual / Anual */}
+              {/* Toggle Mensual / Anual (afecta PRO y Multicotizador; la PROMO es precio fijo) */}
               <div className="flex items-center justify-center gap-3">
                 <span className={`text-sm font-medium ${anual ? "text-muted-foreground" : "text-foreground"}`}>Mensual</span>
                 <button
@@ -285,66 +259,84 @@ export default function SuscripcionPage() {
                 </span>
               </div>
 
-              <div className="rounded-xl border-2 border-blue-600 bg-blue-50 p-6 relative max-w-md mx-auto">
-                <div className="absolute -top-3 left-6 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                  PRO completo
-                </div>
-                <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">Todo sin límites</p>
-                <div className="flex items-end gap-2 mt-2">
-                  <p className="text-4xl font-bold">{fmtMoney(anual ? equiv : mensualMonto)}</p>
-                  <span className="text-sm text-muted-foreground mb-1">por mes</span>
-                </div>
-                {anual ? (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    <s>{fmtMoney(mensualMonto)}/mes</s> · facturado anualmente <b className="text-blue-700">{fmtMoney(anualMonto)}</b>
-                  </p>
-                ) : (
-                  <p className="text-sm text-blue-700 font-medium mt-1">Pasate a anual y ahorrá 2 meses</p>
+              {/* Planes de pago en columnas — todos con el mismo peso visual */}
+              <div className={`grid gap-4 items-stretch ${gridCls}`}>
+
+                {/* PROMO de lanzamiento */}
+                {hayPromo && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 flex flex-col shadow-sm">
+                    <span className="self-start text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Promo de lanzamiento</span>
+                    <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground mt-3">{estado.precios.PROMO!.descripcion}</p>
+                    <div className="flex items-end gap-1.5 mt-1">
+                      <p className="text-3xl font-bold">{fmtMoney(estado.precios.PROMO!.monto)}</p>
+                      <span className="text-xs text-muted-foreground mb-1">/ mes · 3 meses</span>
+                    </div>
+                    {estado.precios.PROMO!.montoFinal ? (
+                      <p className="text-xs text-muted-foreground mt-1">Después pasás a PRO Mensual ({fmtMoney(estado.precios.PROMO!.montoFinal)}/mes). Cancelás cuando quieras.</p>
+                    ) : <p className="text-xs text-muted-foreground mt-1">&nbsp;</p>}
+
+                    <ul className="space-y-1.5 mt-4 text-sm flex-1">
+                      {FEATURES_PRO.map(f => (
+                        <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" /> {f}</li>
+                      ))}
+                    </ul>
+
+                    <button
+                      onClick={() => checkout("PROMO")}
+                      disabled={checkoutLoading !== null}
+                      className="w-full h-11 mt-5 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {checkoutLoading === "PROMO" ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Aprovechar la promo <ExternalLink className="h-4 w-4" /></>}
+                    </button>
+                  </div>
                 )}
 
-                <ul className="space-y-2 mt-5 text-sm">
-                  {FEATURES_PRO.map(f => (
-                    <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> {f}</li>
-                  ))}
-                  {anual && <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> 12 meses, 2 de regalo</li>}
-                </ul>
+                {/* PRO completo */}
+                <div className="rounded-xl border border-slate-200 bg-white p-5 flex flex-col shadow-sm">
+                  <span className="self-start text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-100 text-blue-700">PRO completo</span>
+                  <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground mt-3">Todo sin límites</p>
+                  <div className="flex items-end gap-1.5 mt-1">
+                    <p className="text-3xl font-bold">{fmtMoney(anual ? equiv : mensualMonto)}</p>
+                    <span className="text-xs text-muted-foreground mb-1">por mes</span>
+                  </div>
+                  {anual ? (
+                    <p className="text-xs text-muted-foreground mt-1"><s>{fmtMoney(mensualMonto)}/mes</s> · facturado anualmente <b className="text-blue-700">{fmtMoney(anualMonto)}</b></p>
+                  ) : (
+                    <p className="text-xs text-blue-700 font-medium mt-1">Pasate a anual y ahorrá 2 meses</p>
+                  )}
 
-                <button
-                  onClick={() => checkout(plan)}
-                  disabled={checkoutLoading !== null}
-                  className="w-full h-11 mt-6 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {checkoutLoading === plan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
-                </button>
-              </div>
+                  <ul className="space-y-1.5 mt-4 text-sm flex-1">
+                    {FEATURES_PRO.map(f => (
+                      <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> {f}</li>
+                    ))}
+                    {anual && <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> 12 meses, 2 de regalo</li>}
+                  </ul>
 
-              {/* PRO + Multicotizador */}
-              {(() => {
-                const multiMensual = estado.precios.PRO_MULTICOTIZADOR?.monto || 0
-                const multiAnual = estado.precios.PRO_MULTICOTIZADOR_ANUAL?.monto || 0
-                if (!multiMensual && !multiAnual) return null
-                const multiEquiv = multiAnual ? Math.round(multiAnual / 12) : 0
-                const multiPlan = anual ? "PRO_MULTICOTIZADOR_ANUAL" : "PRO_MULTICOTIZADOR"
-                const multiDisponible = anual ? multiAnual > 0 : multiMensual > 0
-                return (
-                  <div className="rounded-xl border-2 border-violet-600 bg-violet-50 p-6 relative max-w-md mx-auto">
-                    <div className="absolute -top-3 left-6 bg-violet-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                      PRO + Multicotizador
-                    </div>
-                    <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">Todo PRO + cotización múltiple</p>
-                    <div className="flex items-end gap-2 mt-2">
-                      <p className="text-4xl font-bold">{fmtMoney(anual ? multiEquiv : multiMensual)}</p>
-                      <span className="text-sm text-muted-foreground mb-1">por mes</span>
+                  <button
+                    onClick={() => checkout(plan)}
+                    disabled={checkoutLoading !== null}
+                    className="w-full h-11 mt-5 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {checkoutLoading === plan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
+                  </button>
+                </div>
+
+                {/* PRO + Multicotizador */}
+                {hayMulti && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 flex flex-col shadow-sm">
+                    <span className="self-start text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-violet-100 text-violet-700">PRO + Multicotizador</span>
+                    <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground mt-3">Todo PRO + cotización múltiple</p>
+                    <div className="flex items-end gap-1.5 mt-1">
+                      <p className="text-3xl font-bold">{fmtMoney(anual ? multiEquiv : multiMensual)}</p>
+                      <span className="text-xs text-muted-foreground mb-1">por mes</span>
                     </div>
                     {anual ? (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        <s>{fmtMoney(multiMensual)}/mes</s> · facturado anualmente <b className="text-violet-700">{fmtMoney(multiAnual)}</b>
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1"><s>{fmtMoney(multiMensual)}/mes</s> · facturado anualmente <b className="text-violet-700">{fmtMoney(multiAnual)}</b></p>
                     ) : (
-                      <p className="text-sm text-violet-700 font-medium mt-1">Pasate a anual y ahorrá 2 meses</p>
+                      <p className="text-xs text-violet-700 font-medium mt-1">Pasate a anual y ahorrá 2 meses</p>
                     )}
 
-                    <ul className="space-y-2 mt-5 text-sm">
+                    <ul className="space-y-1.5 mt-4 text-sm flex-1">
                       {FEATURES_MULTI.map(f => (
                         <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-violet-600 flex-shrink-0 mt-0.5" /> {f}</li>
                       ))}
@@ -354,18 +346,19 @@ export default function SuscripcionPage() {
                       <button
                         onClick={() => checkout(multiPlan)}
                         disabled={checkoutLoading !== null}
-                        className="w-full h-11 mt-6 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+                        className="w-full h-11 mt-5 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white"
                       >
                         {checkoutLoading === multiPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
                       </button>
                     ) : (
-                      <button disabled className="w-full h-11 mt-6 rounded-md font-semibold bg-slate-200 text-slate-500 flex items-center justify-center gap-2">
+                      <button disabled className="w-full h-11 mt-5 rounded-md font-semibold bg-slate-200 text-slate-500 flex items-center justify-center gap-2">
                         Próximamente
                       </button>
                     )}
                   </div>
-                )
-              })()}
+                )}
+
+              </div>
             </>
           )
         })()}
