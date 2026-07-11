@@ -20,6 +20,7 @@ import {
   Crown,
   Palette,
   GraduationCap,
+  Calculator,
   MessageCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -72,6 +73,7 @@ export function Sidebar({ role, userName, onLinkClick }: SidebarProps) {
     { href: "/admin/seguros/polizas",     label: "Pólizas",        icon: FileText,        tour: "nav-polizas" },
     { href: "/admin/seguros/cobranzas",   label: "Cobranzas",      icon: CreditCard,      tour: "nav-cobranzas" },
     { href: "/admin/seguros/siniestros",  label: "Siniestros",     icon: AlertTriangle,   tour: "nav-siniestros" },
+    { href: "/admin/multicotizador",      label: "Multicotizador", icon: Calculator,      tour: "nav-multicotizador" },
     { href: "/admin/seguros/seguimiento", label: "Seguimiento",    icon: Activity,        tour: "nav-seguimiento" },
     ...(role === "admin" || role === "admin_seguros" ? [{ href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle, tour: "nav-whatsapp" }] : []),
     ...(role === "admin" || role === "admin_seguros" ? [{ href: "/admin/users", label: "Usuarios", icon: Users, tour: "nav-users" }] : []),

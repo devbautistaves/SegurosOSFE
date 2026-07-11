@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { aseguradoraAPI, suscripcionAPI, CompaniaConfig, DatosCobro } from "@/lib/api"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { Loader2, Plus, X, Save, Tag, Building2, CreditCard, Upload, Crown, ImageIcon, Phone, ChevronDown, ChevronRight, ShieldAlert, AppWindow } from "lucide-react"
+import { Loader2, Plus, X, Save, Tag, Building2, CreditCard, Upload, Crown, ImageIcon, Phone, ChevronDown, ChevronRight, ShieldAlert, AppWindow, Search } from "lucide-react"
 import { MisDatosSection } from "@/components/mis-datos-section"
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -28,12 +28,17 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
 
 function TagInput({ items, onChange, placeholder }: { items: string[]; onChange: (v: string[]) => void; placeholder: string }) {
   const [val, setVal] = useState("")
+  const [q, setQ] = useState("")
   const norm = val.trim().toUpperCase().replace(/\s+/g, "_")
   const dup = !!norm && items.includes(norm)
   const add = () => {
     if (!norm || dup) { return }
     onChange([...items, norm]); setVal("")
   }
+  // Orden alfabetico (por etiqueta legible) + filtro de busqueda.
+  const sorted = [...items].sort((a, b) => pretty(a).localeCompare(pretty(b), "es"))
+  const ql = q.trim().toLowerCase()
+  const shown = ql ? sorted.filter(i => pretty(i).toLowerCase().includes(ql)) : sorted
   return (
     <>
       <style>{`@keyframes chipPop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}} .chip-pop{animation:chipPop .18s ease-out both}`}</style>
@@ -56,10 +61,20 @@ function TagInput({ items, onChange, placeholder }: { items: string[]; onChange:
         </button>
       </div>
       {dup && <p className="text-[11px] text-amber-600 mt-1.5">“{pretty(norm)}” ya está en la lista.</p>}
+      {items.length > 6 && (
+        <div className="relative mt-3">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder={`Buscar en ${items.length}…`}
+            className="w-full h-8 rounded-lg border border-input bg-white pl-8 pr-3 text-[13px] outline-none transition-shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-200" />
+        </div>
+      )}
       <div className="flex flex-wrap gap-2 mt-3 min-h-[32px]">
-        {items.map(i => <Chip key={i} label={i} onRemove={() => onChange(items.filter(x => x !== i))} />)}
+        {shown.map(i => <Chip key={i} label={i} onRemove={() => onChange(items.filter(x => x !== i))} />)}
         {items.length === 0 && (
           <p className="text-xs text-muted-foreground italic py-1">Todavía no agregaste ninguno. Escribí arriba y tocá Agregar.</p>
+        )}
+        {items.length > 0 && shown.length === 0 && (
+          <p className="text-xs text-muted-foreground italic py-1">Sin resultados para “{q}”.</p>
         )}
       </div>
     </>

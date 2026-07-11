@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react"
 import { Download, X, Smartphone, Share, Plus, MoreVertical, MessageCircle, ChevronUp } from "lucide-react"
+import { authAPI } from "@/lib/api"
 
 const STORAGE_KEY = "segurosos_install_dismissed_at"
 const DOCK_KEY = "segurosos_dock_collapsed"
 const REMIND_AFTER_MS = 1000 * 60 * 60 * 24 * 7 // 7 días
-const WA_URL = "https://wa.me/5491135767915?text=Hola,%20necesito%20soporte%20con%20SegurOS"
+const WA_NUMBER = "5491135767915"
+const waLink = (negocio?: string) =>
+  `https://wa.me/${WA_NUMBER}?text=` +
+  encodeURIComponent(`Hola${negocio ? `, soy ${negocio}` : ""}, necesito soporte con SegurOS`)
 
 interface BIPEvent extends Event {
   prompt: () => Promise<void>
@@ -20,6 +24,7 @@ export function InstallAppPrompt() {
   const [canInstall, setCanInstall] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [waUrl, setWaUrl] = useState(waLink())
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -57,6 +62,16 @@ export function InstallAppPrompt() {
     }
   }, [])
 
+  // Mensaje de soporte con el nombre del negocio registrado.
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    if (!token) return
+    authAPI.me(token)
+      .then((r: any) => setWaUrl(waLink(r?.aseguradora?.nombre?.trim()))
+      )
+      .catch(() => {})
+  }, [])
+
   const install = async () => {
     if (!deferred) return
     await deferred.prompt()
@@ -87,7 +102,7 @@ export function InstallAppPrompt() {
             className="flex items-center gap-1 rounded-full bg-slate-800/80 px-2.5 py-1 text-[11px] font-medium text-white/90 shadow backdrop-blur hover:bg-slate-700">
             <X className="h-3 w-3" /> Ocultar
           </button>
-          <a href={WA_URL} target="_blank" rel="noopener noreferrer"
+          <a href={waUrl} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-2 rounded-full bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-green-600/30 hover:bg-green-700 active:scale-95 transition">
             <MessageCircle className="h-4 w-4" /> Soporte técnico
           </a>

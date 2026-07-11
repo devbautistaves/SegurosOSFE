@@ -107,6 +107,10 @@ async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}): Promis
   }
 
   if (!response.ok) {
+    // Tope del plan de PRUEBA → popup de upsell (además del throw normal)
+    if (data?.code === "TRIAL_LIMIT" && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("trial-limit-reached", { detail: { recurso: data.recurso, limite: data.limite, uso: data.uso, upgradeUrl: data.upgradeUrl } }))
+    }
     // 401 sin expired: token corrupto / sin auth → login limpio
     if (response.status === 401) {
       forceLogoutToLogin()
@@ -954,6 +958,8 @@ export const whatsappAPI = {
     fetchAPI<{ ok: boolean }>("/api/whatsapp/plantillas", { method: "PUT", token, body: JSON.stringify(patch) }),
   testAviso: (token: string, tipo: string, to: string) =>
     fetchAPI<{ ok: boolean; error?: string }>("/api/whatsapp/test-aviso", { method: "POST", token, body: JSON.stringify({ tipo, to }) }),
+  testResumen: (token: string, to: string) =>
+    fetchAPI<{ ok: boolean; error?: string }>("/api/whatsapp/test-resumen", { method: "POST", token, body: JSON.stringify({ to }) }),
 }
 export type WaPolizaKey = "polizaProxima" | "polizaVenceHoy" | "polizaVencida"
 export interface WaPolizasConfig {
@@ -961,6 +967,8 @@ export interface WaPolizasConfig {
   polizaVenceHoy: { enabled: boolean }
   polizaVencida: { enabled: boolean }
   diasProximo: number
+  horarioEnvios?: { desde: number; hasta: number }
+  resumenMultiPoliza?: { enabled: boolean }
 }
 export interface WaVariable { tag: string; desc: string }
 export interface WaPlantilla { tipo: string; configKey: string; label: string; cuando: string; default: string; custom: string; preview: string }
