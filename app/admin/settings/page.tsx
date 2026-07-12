@@ -9,7 +9,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
-import { usersAPI, companySettingsAPI, User, CompanySettingsData } from "@/lib/api"
+import { usersAPI, companySettingsAPI, segurosAPI, User, CompanySettingsData } from "@/lib/api"
 import { useCompany } from "@/lib/company-context"
 import { User as UserIcon, Mail, Phone, MapPin, Shield, Lock, Eye, EyeOff, AlertTriangle, Wrench, Building2, DollarSign } from "lucide-react"
 
@@ -25,6 +25,8 @@ export default function AdminSettingsPage() {
   const [companySettings, setCompanySettings] = useState<CompanySettingsData | null>(null)
   const [isSavingSettings, setIsSavingSettings] = useState(false)
   const [baseCommissionInput, setBaseCommissionInput] = useState("")
+  const [objetivoInput, setObjetivoInput] = useState("50")
+  const [savingObjetivo, setSavingObjetivo] = useState(false)
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -42,6 +44,10 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     fetchProfile()
+  }, [])
+
+  useEffect(() => {
+    fetchObjetivo()
   }, [])
 
   useEffect(() => {
@@ -86,6 +92,32 @@ export default function AdminSettingsPage() {
     } finally {
       setIsSavingSettings(false)
     }
+  }
+
+  const fetchObjetivo = async () => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    try {
+      const r = await segurosAPI.getObjetivo(token)
+      if (r?.success) setObjetivoInput(String(r.objetivoMensual ?? 50))
+    } catch {}
+  }
+
+  const saveObjetivo = async () => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    const n = Math.round(Number(objetivoInput))
+    if (!Number.isFinite(n) || n < 1) {
+      toast({ title: "Objetivo invalido", description: "Ingresa un numero mayor a 0", variant: "destructive" })
+      return
+    }
+    setSavingObjetivo(true)
+    try {
+      const r = await segurosAPI.setObjetivo(token, n)
+      if (r?.success) { setObjetivoInput(String(r.objetivoMensual)); toast({ title: "Objetivo guardado", description: `Meta mensual: ${r.objetivoMensual} polizas` }) }
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" })
+    } finally { setSavingObjetivo(false) }
   }
 
   const fetchProfile = async () => {
@@ -253,6 +285,33 @@ export default function AdminSettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Objetivo mensual */}
+        {(user?.role === "admin" || user?.role === "admin_seguros") && (
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Objetivo mensual
+            </CardTitle>
+            <CardDescription>
+              Meta de polizas emitidas por mes. Se muestra en el tablero con la barra de progreso.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-end gap-3">
+              <Field className="max-w-[220px]">
+                <FieldLabel htmlFor="objetivo">Polizas por mes</FieldLabel>
+                <Input id="objetivo" type="number" min={1} value={objetivoInput}
+                  onChange={(e) => setObjetivoInput(e.target.value)} className="bg-secondary/50" />
+              </Field>
+              <Button onClick={saveObjetivo} disabled={savingObjetivo} className="bg-primary text-primary-foreground">
+                {savingObjetivo ? (<><Spinner className="mr-2 h-4 w-4" />Guardando...</>) : "Guardar objetivo"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        )}
 
         {/* Profile Card */}
         <Card className="border-border/50 bg-card/50">
