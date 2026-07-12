@@ -128,10 +128,11 @@ export default function SuscripcionPage() {
   const diasTrial = estado.trial?.diasRestantes ?? null
   const tienePlanPago = ["PROMO", "PRO_MENSUAL", "PRO_ANUAL", "PRO_MULTICOTIZADOR", "PRO_MULTICOTIZADOR_ANUAL"].includes(estado.planCodigo ?? "")
   const esPRO = tienePlanPago || (estado.plan === "PRO" && estado.planStatus === "ACTIVO")
-  // Mostramos los planes para contratar si NO tiene un plan pago real
-  // (incluye trial y vencido: queremos que enganchen la PROMO antes de que se
-  // les corte la prueba).
-  const mostrarPlanes = !tienePlanPago
+  // Los planes SIEMPRE visibles: quien ya paga puede cambiar/subir de plan
+  // cuando quiera. La PROMO se oculta a los pagos (es oferta de arranque).
+  const mostrarPlanes = true
+  const esActualPRO = ["PRO_MENSUAL", "PRO_ANUAL", "PROMO"].includes(estado.planCodigo ?? "")
+  const esActualMulti = ["PRO_MULTICOTIZADOR", "PRO_MULTICOTIZADOR_ANUAL"].includes(estado.planCodigo ?? "")
   const usoBarras = [
     { label: "Pólizas",    actual: estado.uso.polizas,    limit: estado.limites.polizas },
     { label: "Cobranzas",  actual: estado.uso.cobranzas,  limit: estado.limites.cobranzas },
@@ -216,17 +217,24 @@ export default function SuscripcionPage() {
       {/* Planes disponibles */}
       {mostrarPlanes && (
         <>
-        {/* Qué incluye el plan FREE (gratis) + sus límites */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-          <p className="text-sm font-semibold text-slate-700">Plan FREE (gratis)</p>
-          <p className="text-xs text-slate-500 mt-0.5">Para arrancar. Cuando lo necesites, pasá a PRO y sacá los límites.</p>
-          <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-3 text-sm text-slate-600">
-            {FEATURES_FREE.map(f => (
-              <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5" /> {f}</li>
-            ))}
-          </ul>
-          <p className="text-xs text-slate-400 mt-3">WhatsApp, avisos por email y marca propia están disponibles solo en PRO.</p>
-        </div>
+        {tienePlanPago ? (
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Cambiar de plan</h2>
+            <p className="text-sm text-muted-foreground">Podés subir o cambiar tu plan cuando quieras. Si ya tenés uno activo, cancelá el anterior para no duplicar el cobro.</p>
+          </div>
+        ) : (
+          /* Qué incluye el plan FREE (gratis) + sus límites */
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-sm font-semibold text-slate-700">Plan FREE (gratis)</p>
+            <p className="text-xs text-slate-500 mt-0.5">Para arrancar. Cuando lo necesites, pasá a PRO y sacá los límites.</p>
+            <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-3 text-sm text-slate-600">
+              {FEATURES_FREE.map(f => (
+                <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5" /> {f}</li>
+              ))}
+            </ul>
+            <p className="text-xs text-slate-400 mt-3">WhatsApp, avisos por email y marca propia están disponibles solo en PRO.</p>
+          </div>
+        )}
 
         {(() => {
           const anual = ciclo === "anual"
@@ -240,7 +248,7 @@ export default function SuscripcionPage() {
           const multiPlan = anual ? "PRO_MULTICOTIZADOR_ANUAL" : "PRO_MULTICOTIZADOR"
           const multiDisponible = anual ? multiAnual > 0 : multiMensual > 0
           const hayMulti = !!(multiMensual || multiAnual)
-          const hayPromo = !!estado.precios.PROMO
+          const hayPromo = !!estado.precios.PROMO && !tienePlanPago
           const cols = (hayPromo ? 1 : 0) + 1 + (hayMulti ? 1 : 0)
           const gridCls = cols >= 3 ? "md:grid-cols-3" : cols === 2 ? "md:grid-cols-2 max-w-2xl mx-auto" : "max-w-md mx-auto"
           return (
@@ -312,13 +320,17 @@ export default function SuscripcionPage() {
                     {anual && <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" /> 12 meses, 2 de regalo</li>}
                   </ul>
 
-                  <button
-                    onClick={() => checkout(plan)}
-                    disabled={checkoutLoading !== null}
-                    className="w-full h-11 mt-5 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {checkoutLoading === plan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
-                  </button>
+                  {esActualPRO ? (
+                    <div className="w-full h-11 mt-5 rounded-md font-semibold flex items-center justify-center gap-2 bg-slate-100 text-slate-500 border border-slate-200"><Check className="h-4 w-4" /> Tu plan actual</div>
+                  ) : (
+                    <button
+                      onClick={() => checkout(plan)}
+                      disabled={checkoutLoading !== null}
+                      className="w-full h-11 mt-5 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {checkoutLoading === plan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{tienePlanPago ? "Cambiar a PRO" : "Pagar con MercadoPago"} <ExternalLink className="h-4 w-4" /></>}
+                    </button>
+                  )}
                 </div>
 
                 {/* PRO + Multicotizador */}
@@ -342,13 +354,15 @@ export default function SuscripcionPage() {
                       ))}
                     </ul>
 
-                    {multiDisponible ? (
+                    {esActualMulti ? (
+                      <div className="w-full h-11 mt-5 rounded-md font-semibold flex items-center justify-center gap-2 bg-slate-100 text-slate-500 border border-slate-200"><Check className="h-4 w-4" /> Tu plan actual</div>
+                    ) : multiDisponible ? (
                       <button
                         onClick={() => checkout(multiPlan)}
                         disabled={checkoutLoading !== null}
                         className="w-full h-11 mt-5 rounded-md font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white"
                       >
-                        {checkoutLoading === multiPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pagar con MercadoPago <ExternalLink className="h-4 w-4" /></>}
+                        {checkoutLoading === multiPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{tienePlanPago ? "Cambiar a Multicotizador" : "Pagar con MercadoPago"} <ExternalLink className="h-4 w-4" /></>}
                       </button>
                     ) : (
                       <button disabled className="w-full h-11 mt-5 rounded-md font-semibold bg-slate-200 text-slate-500 flex items-center justify-center gap-2">
