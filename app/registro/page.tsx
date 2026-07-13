@@ -23,6 +23,7 @@ export default function RegistroPage() {
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [yaExiste, setYaExiste] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const [aceptaTerminos, setAceptaTerminos] = useState(false)
   const [form, setForm] = useState<RegisterAseguradoraData>({
@@ -67,6 +68,7 @@ export default function RegistroPage() {
       localStorage.setItem("aseguradora", JSON.stringify(r.aseguradora))
       router.replace("/admin")
     } catch (e: any) {
+      setYaExiste(e?.status === 409 || e?.code === "EMAIL_ALREADY_ADMIN")
       setErr(e.message || "Error al crear la cuenta")
     } finally { setLoading(false) }
   }
@@ -177,6 +179,7 @@ export default function RegistroPage() {
           )}
 
           {err && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 mt-4">{err}</p>}
+          {yaExiste && (<a href="/recuperar" className="block text-center text-sm font-semibold underline underline-offset-2 mt-2" style={{ color: "#2563eb" }}>Recuperar contraseña</a>)}
 
           {/* Navegación */}
           <div className="flex gap-2 mt-5">

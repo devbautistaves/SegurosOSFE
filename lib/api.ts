@@ -115,7 +115,10 @@ async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}): Promis
     if (response.status === 401) {
       forceLogoutToLogin()
     }
-    throw new Error(data.message || data.error || `Error ${response.status}`)
+    const e: any = new Error(data.message || data.error || `Error ${response.status}`)
+    e.status = response.status
+    e.code = data.code
+    throw e
   }
 
   return data as T
