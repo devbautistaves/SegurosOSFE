@@ -2450,6 +2450,7 @@ export interface Poliza {
   ramo?: string
   tipoCobertura?: string
   fechaInicVig?: string
+  fechaFinVig?: string
   // Estado y pago
   estado: "VIGENTE" | "ANULADA" | "PENDIENTE_CLIENTE"
   motivoAnulacion?: string
@@ -2470,6 +2471,11 @@ export interface Poliza {
   chasis?: string
   motor?: string
   gnc?: boolean
+  // Renovación (historial)
+  renovada?: boolean
+  renovadaEnId?: string | null
+  renovadaDeId?: string | null
+  renovadaEn?: string | null
   // Meta
   creadoPor?: string
   createdAt: string

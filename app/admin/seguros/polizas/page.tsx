@@ -189,7 +189,7 @@ function PolizasPageInner() {
     setRenovarForm({
       fechaInicVig: hoy.toISOString().slice(0, 10),
       fechaFinVig: fin.toISOString().slice(0, 10),
-      numPoliza: p.numPoliza || "",
+      numPoliza: "", // se pide el NUEVO número de la póliza renovada
     })
     setIsRenovarOpen(true)
   }
@@ -198,6 +198,9 @@ function PolizasPageInner() {
     if (!selectedPoliza) return
     const token = localStorage.getItem("token")
     if (!token) return
+    if (!renovarForm.numPoliza.trim()) {
+      toast({ title: "Falta el número", description: "Cargá el nuevo N° de póliza", variant: "destructive" }); return
+    }
     if (!renovarForm.fechaInicVig || !renovarForm.fechaFinVig) {
       toast({ title: "Faltan fechas", description: "Cargá inicio y fin de vigencia", variant: "destructive" }); return
     }
@@ -210,7 +213,7 @@ function PolizasPageInner() {
       })
       const d = await r.json()
       if (!d.success) throw new Error(d.error || "Error renovando póliza")
-      toast({ title: "Póliza renovada", description: `Vigencia hasta ${new Date(renovarForm.fechaFinVig).toLocaleDateString("es-AR")}` })
+      toast({ title: "Póliza renovada", description: `Nueva póliza vigente hasta ${new Date(renovarForm.fechaFinVig).toLocaleDateString("es-AR")}. La anterior quedó no vigente en el historial.` })
       setIsRenovarOpen(false)
       setSelectedPoliza(null)
       fetchPolizas()
@@ -679,7 +682,16 @@ function PolizasPageInner() {
                         </td>
                         <td className="py-3 px-3 hidden lg:table-cell font-mono text-xs">{p.numPoliza || "—"}</td>
                         <td className="py-3 px-3 hidden xl:table-cell text-xs">{p.medioDePago ? (MEDIO_LABELS[p.medioDePago] || p.medioDePago) : "—"}</td>
-                        <td className="py-3 px-3">{estadoBadge(p.estado)}</td>
+                        <td className="py-3 px-3">
+                          <div className="flex flex-col items-start gap-1">
+                            {estadoBadge(p.estado)}
+                            {p.renovada && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-500/15 text-sky-600" title="Reemplazada por una póliza nueva">
+                                <RefreshCw className="h-2.5 w-2.5" />Renovada
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="py-3 px-3">
                           <div className="flex gap-1">
                             <Button
@@ -691,7 +703,7 @@ function PolizasPageInner() {
                             >
                               <IdCard className="h-4 w-4" />
                             </Button>
-                            {p.estado !== "ANULADA" && (
+                            {p.estado !== "ANULADA" && !p.renovada && (
                               <Button variant="ghost" size="icon" onClick={() => openRenovar(p)} title="Renovar póliza">
                                 <RefreshCw className="h-4 w-4 text-orange-500" />
                               </Button>
@@ -1116,7 +1128,16 @@ function PolizasPageInner() {
               {selectedPoliza?.nombreApellido} — {selectedPoliza?.patente || "sin patente"}
             </DialogDescription>
           </DialogHeader>
+          <div className="rounded-lg bg-orange-500/10 border border-orange-500/20 px-3 py-2 text-xs text-orange-700 dark:text-orange-300">
+            Se crea una <strong>póliza nueva vigente</strong> con estos datos y la anterior queda <strong>NO VIGENTE</strong>, guardada en el historial del cliente.
+          </div>
           <FieldGroup>
+            <Field>
+              <FieldLabel>Nuevo N° de póliza *</FieldLabel>
+              <Input value={renovarForm.numPoliza}
+                onChange={e => setRenovarForm(p => ({ ...p, numPoliza: e.target.value }))}
+                placeholder="Número de la póliza renovada" required />
+            </Field>
             <Field>
               <FieldLabel>Nueva fecha inicio *</FieldLabel>
               <Input type="date" value={renovarForm.fechaInicVig}
@@ -1126,12 +1147,6 @@ function PolizasPageInner() {
               <FieldLabel>Nueva fecha fin *</FieldLabel>
               <Input type="date" value={renovarForm.fechaFinVig}
                 onChange={e => setRenovarForm(p => ({ ...p, fechaFinVig: e.target.value }))} required />
-            </Field>
-            <Field>
-              <FieldLabel>N° de póliza (opcional)</FieldLabel>
-              <Input value={renovarForm.numPoliza}
-                onChange={e => setRenovarForm(p => ({ ...p, numPoliza: e.target.value }))}
-                placeholder="Dejar igual o cargar nuevo" />
             </Field>
           </FieldGroup>
           <DialogFooter>
