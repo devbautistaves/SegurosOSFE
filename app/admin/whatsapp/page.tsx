@@ -139,7 +139,7 @@ export default function WhatsAppPage() {
   }
 
   // Avisos "próximos a vencer" cuyo "días antes" es configurable por el admin.
-  const DIAS_FIELD: Record<string, string> = { polizaProxima: "diasProximo", cuotaProxima: "diasCuotaProximo" }
+  const DIAS_FIELD: Record<string, string> = { polizaProxima: "diasProximo", cuotaProxima: "diasCuotaProximo", cuotaVencida: "cuotaVencidaRepetirDias" }
   const guardarDias = async (field: string, val: number) => {
     if (!config || !val || val < 1) return
     const prev = config
@@ -534,14 +534,14 @@ export default function WhatsAppPage() {
                               {a.cuando}
                               {diasField && config ? (
                                 <span className="inline-flex items-center gap-1 ml-1 align-middle">
-                                  Avisar
-                                  <input type="number" min={1} max={diasField === "diasProximo" ? 60 : 15}
+                                  {a.configKey === "cuotaVencida" ? "Reenviar cada" : "Avisar"}
+                                  <input type="number" min={a.configKey === "cuotaVencida" ? 0 : 1} max={diasField === "diasCuotaProximo" ? 15 : 60}
                                     value={(config as any)[diasField] ?? ""}
                                     onClick={(e) => e.stopPropagation()}
                                     onChange={(e) => setConfig({ ...(config as any), [diasField]: parseInt(e.target.value) || 0 })}
                                     onBlur={(e) => guardarDias(diasField, parseInt(e.target.value) || 0)}
                                     className="w-11 px-1 py-0.5 rounded border text-center text-xs" style={{ borderColor: "#e2e8f0" }} />
-                                  días antes.
+                                  {a.configKey === "cuotaVencida" ? "días (0 = una vez)." : "días antes."}
                                 </span>
                               ) : ""}
                             </span>
