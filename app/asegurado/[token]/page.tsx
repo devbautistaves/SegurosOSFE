@@ -522,6 +522,9 @@ export default function AseguradoLegajoPage() {
             <p style={{ textAlign: "center", margin: "34px 0 4px", fontSize: 11.5, color: "var(--muted)" }}>
               Tu legajo lo lleva <strong>{data.productor.nombre}</strong> con <strong>SegurOS</strong>
             </p>
+            <p style={{ textAlign: "center", margin: "0 0 6px", fontSize: 11.5 }}>
+              <a href="https://seguros.tusventas.com.ar" target="_blank" rel="noopener noreferrer" style={{ color: "var(--muted)", textDecoration: "underline" }}>Este negocio usa <strong>APP SegurOS</strong></a>
+            </p>
           </div>
         </>
       )}
