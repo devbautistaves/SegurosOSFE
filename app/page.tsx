@@ -135,7 +135,10 @@ export default function LandingPage() {
         <div className="sg-wrap sg-foot-row">
           <span className="sg-brand">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/icons/seguros-512.png" alt="SegurOS" style={{ width: 30, height: 30, objectFit: "contain" }} /><span className="sg-brand-name" style={{ fontSize: 16 }}>Segur<span style={{ color: CYAN }}>OS</span></span></span>
           <span className="sg-foot-meta">Un producto de TusVentas · Hecho en Argentina</span>
-          <Link href="/login" className="sg-link">Ingresar</Link>
+          <span style={{ display: "flex", gap: 18, alignItems: "center" }}>
+            <Link href="/terminos" className="sg-link">Términos y Privacidad</Link>
+            <Link href="/login" className="sg-link">Ingresar</Link>
+          </span>
         </div>
       </footer>
     </div>

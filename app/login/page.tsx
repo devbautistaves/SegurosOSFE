@@ -113,7 +113,14 @@ export default function LoginPage() {
           <p className="text-[11px] text-center text-slate-500 mt-2">7 días de prueba · sin tarjeta</p>
         </div>
 
-        <p className="text-center text-xs text-slate-600 mt-6">© {new Date().getFullYear()} SegurOS — by TusVentas.</p>
+        <p className="text-center text-xs text-slate-600 mt-6">
+          © {new Date().getFullYear()} SegurOS — by TusVentas.
+          <br />
+          Al ingresar aceptás los{" "}
+          <Link href="/terminos" className="text-slate-400 hover:text-slate-200 underline underline-offset-2 transition-colors">
+            Términos y la Política de Protección de Datos
+          </Link>.
+        </p>
       </div>
     </AuthShell>
   )
